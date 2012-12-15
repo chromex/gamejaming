@@ -25,6 +25,7 @@ public:
 	static Users* Instance();
 
 	User* GetUserByUsername(const string& uname);
+	User* CreateUser(const string& uname, const string& password);
 
 private:
 	typedef vector<User*> UserVec;

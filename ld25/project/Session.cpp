@@ -12,6 +12,7 @@ Session::Session( boost::asio::io_service& service )
 	: _socket(service)
 	, _loginStage(0)
 	, _remainingHeader(21)
+	, _user(0)
 	, _closing(false)
 	, _sending(false)
 	, _recving(false)
@@ -48,9 +49,6 @@ void Session::SendPrompt()
 }
 
 // TODO
-// Vet password
-// Vet handle
-// Strip all illegal characters from input (alnum and punct)
 // Strip telnet command codes
 // Colorizing of sent data
 
@@ -63,30 +61,84 @@ void Session::LoginMessage( const string& message )
 		return;
 	case 1:
 		{
-			User* user = Users::Instance()->GetUserByUsername(message);
-			if(0 == user)
+			_user = Users::Instance()->GetUserByUsername(message);
+			if(0 == _user)
 			{
-				SendStream("Creating new user '" << message << "'\r\n");
-				Send("What is your password?\r\n");
-				++_loginStage;
+				if(message.length() < 33)
+				{
+					SendStream("Creating new user '" << message << "'\r\n");
+					Send("What would you like for your password?\r\nKnow that telnet is not secure so don't use your normal password!\r\n");
+					++_loginStage;
+					_authUsername = message;
+				}
+				else
+				{
+					Send("Username is too long, 32 character max. Try again!\r\n");
+				}
 			}
 			else
 			{
-				Log("Old user");
-				_loginStage = -1;
+				Send("And your password?\r\n");
+				_loginStage = 10;
+				_authUsername = message;
 			}
 		}
 		break;
 	case 2:
 		{
-			Send("Again!\r\n");
-			++_loginStage;
+			if(message.length() < 129)
+			{
+				Send("Again!\r\n");
+				++_loginStage;
+				_authPassword = message;
+			}
+			else
+			{
+				Send("Password was too long, try again!\r\n");
+			}
 		}
 		break;
 	case 3:
 		{
-			Send("User created!\r\n");
-			_loginStage = -1;
+			if(_authPassword == message)
+			{
+				_user = Users::Instance()->CreateUser(_authUsername, _authPassword);
+
+				if(0 != _user)
+				{
+					SendStream("Created user '" << _authUsername << "' with password '" << _authPassword << "'\r\n");
+					_loginStage = -1;
+				}
+				else
+				{
+					Send("It looks like your username was taken while you were signing up.\r\nWhat username would you like?\r\n");
+					_loginStage = 1;
+				}
+			}
+			else
+			{
+				Send("Passwords don't match.\r\nWhat would you like for your password?\r\n");
+				--_loginStage;
+			}
+		}
+		break;
+	case 10:
+		{
+			if(_user->Password == message)
+			{
+				SendStream(GREENCOLOR << "Authentication successful\r\n" << CLEARCOLOR);
+				if(_user->Admin)
+				{
+					SendStream("Welcome back, administrator.\r\n");
+				}
+				_loginStage = -1;
+				Log("User '" << _user->Username << "' returns");
+			}
+			else
+			{
+				SendStream("Failed authentication!\r\nWhat is the username you have or would like to have?\r\n");
+				_loginStage = 1;
+			}
 		}
 		break;
 	}
@@ -133,6 +185,22 @@ void Session::HandleSend( const boost::system::error_code& error )
 	}
 }
 
+// TODO
+// Should be attempting to strip the telnet command codes in here
+string StripInput(const char* input)
+{
+	stringstream ss;
+
+	while(0 != *input)
+	{
+		if(isprint(*input))
+			ss << *input;
+		++input;
+	}
+
+	return ss.str();
+}
+
 void Session::HandleRecv( const boost::system::error_code& error, size_t nRecvd )
 {
 	_recving = false;
@@ -160,8 +228,9 @@ void Session::HandleRecv( const boost::system::error_code& error, size_t nRecvd 
 		string line;
 		istream is(&_buffer);
 		getline(is, line);
+		line = StripInput(line.c_str());
 
-		if(line.length() > 50)
+		if(line.length() > 1024)
 		{
 			LogWarning("Over long message received, killing session");
 			_socket.close();
@@ -178,11 +247,11 @@ void Session::HandleRecv( const boost::system::error_code& error, size_t nRecvd 
 		{
 			if(_loginStage > 0)
 			{
-				LoginMessage(line.substr(0,line.length()-1));
+				LoginMessage(line);
 			}
 			else
 			{
-				CommandMessage(line.substr(0,line.length()-1));
+				CommandMessage(line);
 			}
 
 			SendPrompt();

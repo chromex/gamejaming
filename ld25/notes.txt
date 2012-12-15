@@ -1,8 +1,6 @@
 == Todo ==
 
-Finish auth
- - New user
- - Old user
+Kick duplicate sessions!
 
 Commands
  - Status commands

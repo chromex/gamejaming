@@ -9,6 +9,8 @@ using boost::asio::ip::tcp;
 #include <string>
 using namespace std;
 
+#include "Users.h"
+
 class Session
 {
 public:
@@ -42,6 +44,11 @@ private:
 	int _loginStage;
 	boost::asio::streambuf _buffer;
 	size_t _remainingHeader;
+
+	string _authUsername;
+	string _authPassword;
+
+	User* _user;
 
 	// Dead session handling
 	bool _closing;

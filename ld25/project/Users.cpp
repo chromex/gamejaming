@@ -100,6 +100,26 @@ Users* Users::Instance()
 	return &db;
 }
 
+User* Users::CreateUser( const string& uname, const string& password )
+{
+	if(0 != GetUserByUsername(uname))
+	{
+		return 0;
+	}
+
+	User* user = new User;
+	user->Username = uname;
+	user->Password = password;
+	user->Money = 20000;
+	user->Respect = 100;
+	user->Admin = false;
+	_users.push_back(user);
+
+	Log("New user created: " << uname);
+
+	return user;
+}
+
 User::User()
 	: Money(0)
 	, Respect(0)
