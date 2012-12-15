@@ -1,0 +1,33 @@
+== Todo ==
+
+Basic sessions
+
+== Theme ==
+
+You are the villain
+
+== Idea ==
+
+- Prisoner's delimma
+- Need some resource that grows in rate when you work together
+	- Some networked corp bullshit
+- No one betrays, decent rate
+- One betrays, great rate, other gets fucked
+- Both betray, horrible rate
+
+== Discrete ==
+
+- Can chat
+- Get to set up contracts
+- Contract lasts for 12 hours
+- Have to choose to work together or fuck someone over before contract is signed (secret)
+- Reporting agency gives details?
+- Specific date when it officially begins and ends
+- Needs account system
+
+== Session ==
+
+- Session is created when a user attaches
+- Can log in or create a new account
+- Accounts are a user name, password, and handle + uuid
+- If the user is already logged in, kick the other session(s)
