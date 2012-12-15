@@ -1,12 +1,13 @@
 == Todo ==
 
+Server
+ - Check usernames for only alnum
+
 Commands
  - Status commands
    - Player stats
    - Leader boards
    - Current contracts
- - Admin commands
-   - Shutdown
 
 Periodic saving of game state
  - Corp data

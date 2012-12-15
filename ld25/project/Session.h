@@ -28,10 +28,12 @@ public:
 
 private:
 	// Commands
+	void DoAbout(const string& message);
 	void DoWho();
 	void DoSay(const string& message);
 	void DoQuit();
 	void DoSave();
+	void DoSetAbout(const string& message);
 
 	// Auth/create
 	void SendWelcome();

@@ -140,7 +140,8 @@ User* Users::CreateUser( const string& uname, const string& password )
 	user->Password = password;
 	user->Money = 2000;
 	user->Respect = 100;
-	user->Admin = false;
+	user->About = "No about message set";
+	user->Admin = _users.size() == 0;
 	_users.push_back(user);
 
 	Log("New user created: " << uname);

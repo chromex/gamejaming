@@ -162,43 +162,6 @@ void Session::LoginMessage( const string& message )
 	}
 }
 
-void Session::DoWho()
-{
-	vector<User*> users;
-	World::Instance()->GetUsers(users);
-
-	stringstream ss;
-	ss << "--[" << GREENCOLOR << "Users Online" << CLEARCOLOR << "]------\r\n";
-	for(vector<User*>::const_iterator user = users.begin(); user != users.end(); ++user)
-	{
-		User* up = *user;
-		if(up->Admin)
-			ss << "[Admin] ";
-		ss << up->Username << " - $" << up->Money << " R" << up->Respect << "\r\n";
-	}
-	Send(ss.str());
-}
-
-void Session::DoSay( const string& message )
-{
-	stringstream ss;
-	ss << _user->Username << ": " << message << "\r\n";
-	World::Instance()->Broadcast(ss.str());
-}
-
-void Session::DoQuit()
-{
-	SendImmediate("Bye\r\n");
-	_shouldQuit = true;
-}
-
-void Session::DoSave()
-{
-	Users::Instance()->Save();
-	Contracts::Instance()->Save();
-	SendStream(REDCOLOR << "Saved\r\n" << CLEARCOLOR);
-}
-
 string ExtractCommand(const string& message, string& remainder)
 {
 	size_t idx = message.find(' ');
@@ -227,6 +190,73 @@ string ExtractCommand(const string& message, string& remainder)
 	return command;
 }
 
+void Session::DoWho()
+{
+	vector<User*> users;
+	World::Instance()->GetUsers(users);
+
+	stringstream ss;
+	ss << "--[" << GREENCOLOR << "Users Online" << CLEARCOLOR << "]------\r\n";
+	for(vector<User*>::const_iterator user = users.begin(); user != users.end(); ++user)
+	{
+		User* up = *user;
+		if(up->Admin)
+			ss << "[Admin] ";
+		ss << up->Username << " - $" << up->Money << " R" << up->Respect << "\r\n";
+	}
+	Send(ss.str());
+}
+
+void Session::DoAbout( const string& message )
+{
+	string remainder;
+	string username = ExtractCommand(message, remainder);
+
+	if(0 == username.length())
+	{
+		Send("Syntax: about <user>\r\n");
+		return;
+	}
+
+	User* user = Users::Instance()->GetUserByUsername(username);
+	if(0 == user)
+	{
+		SendStream("No such user '" << username << "'\r\n");
+		return;
+	}
+
+	SendStream("--[" << GREENCOLOR << "About " << username << CLEARCOLOR << "]------\r\n");
+	SendStream(user->About << "\r\n");
+	SendStream("Money: $" << user->Money << "\r\n");
+	SendStream("Respect: R" << user->Respect << "\r\n");
+}
+
+void Session::DoSay( const string& message )
+{
+	stringstream ss;
+	ss << "<" << _user->Username << "> " << message << "\r\n";
+	World::Instance()->Broadcast(ss.str());
+}
+
+void Session::DoSetAbout( const string& message )
+{
+	_user->About = message;
+	SendStream("About set to:\r\n" << message << "\r\n");
+}
+
+void Session::DoQuit()
+{
+	SendImmediate("Bye\r\n");
+	_shouldQuit = true;
+}
+
+void Session::DoSave()
+{
+	Users::Instance()->Save();
+	Contracts::Instance()->Save();
+	SendStream(REDCOLOR << "Saved\r\n" << CLEARCOLOR);
+}
+
 void Session::CommandMessage( const string& message )
 {
 	string remainder;
@@ -241,7 +271,11 @@ void Session::CommandMessage( const string& message )
 	switch(command[0])
 	{
 	case 'a':
-		// About <player>
+		if("about" == command)
+		{
+			DoAbout(remainder);
+			return;
+		}
 		break;
 	case 'b':
 		break;
@@ -299,8 +333,12 @@ void Session::CommandMessage( const string& message )
 			DoSave();
 			return;
 		}
+		if("setabout" == command)
+		{
+			DoSetAbout(remainder);
+			return;
+		}
 		// Stats
-		// SetAbout
 		break;
 	case 't':
 		// Tell
