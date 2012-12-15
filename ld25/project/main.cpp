@@ -4,10 +4,13 @@ using namespace std;
 #include "Log.h"
 #include "Server.h"
 #include "Settings.h"
+#include "Users.h"
 
 int main(int argc, char** argv)
 {
 	Log("Starting LD25: Prisoner's Dilemma Server");
+
+	Users::Instance();
 
 	Server(Settings::port).Run();
 

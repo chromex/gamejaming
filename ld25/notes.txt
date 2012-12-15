@@ -1,11 +1,8 @@
 == Todo ==
 
-Kick duplicate sessions!
-
 Commands
  - Status commands
    - Player stats
-   - Who is online
    - Leader boards
    - Current contracts
  - Admin commands
@@ -16,8 +13,6 @@ Periodic saving of game state
  - User data
  - Corp data
  - Contract data
-
-Trigger data loads at startup
 
 == Theme ==
 

@@ -3,6 +3,7 @@
 #include "Settings.h"
 #include "Users.h"
 #include "Colors.h"
+#include "World.h"
 
 #include <istream>
 
@@ -11,16 +12,18 @@
 Session::Session( boost::asio::io_service& service )
 	: _socket(service)
 	, _loginStage(0)
-	, _remainingHeader(21)
+	, _remainingHeader(0)
 	, _user(0)
 	, _closing(false)
 	, _sending(false)
 	, _recving(false)
+	, _shouldQuit(false)
 {}
 
 Session::~Session()
 {
 	Log("Session destroyed");
+	World::Instance()->RemoveSession(this);
 }
 
 tcp::socket& Session::Socket()
@@ -28,11 +31,27 @@ tcp::socket& Session::Socket()
 	return _socket;
 }
 
+User* Session::GetUser()
+{
+	return _user;
+}
+
 void Session::Start()
 {
 	Log("Starting session");
 	SendWelcome();
 	ChainRecv();
+}
+
+void Session::Stop()
+{
+	_socket.close();
+	_closing = true;
+
+	if(!_sending && !_recving)
+	{
+		delete this;
+	}
 }
 
 void Session::SendWelcome()
@@ -45,12 +64,9 @@ void Session::SendWelcome()
 
 void Session::SendPrompt()
 {
-	SendStream(GREENCOLOR << "> " << CLEARCOLOR);
+	if(!_closing)
+		SendStream(GREENCOLOR << "> " << CLEARCOLOR);
 }
-
-// TODO
-// Strip telnet command codes
-// Colorizing of sent data
 
 void Session::LoginMessage( const string& message )
 {
@@ -108,6 +124,7 @@ void Session::LoginMessage( const string& message )
 				{
 					SendStream("Created user '" << _authUsername << "' with password '" << _authPassword << "'\r\n");
 					_loginStage = -1;
+					World::Instance()->AddSession(this);
 				}
 				else
 				{
@@ -133,6 +150,7 @@ void Session::LoginMessage( const string& message )
 				}
 				_loginStage = -1;
 				Log("User '" << _user->Username << "' returns");
+				World::Instance()->AddSession(this);
 			}
 			else
 			{
@@ -144,9 +162,155 @@ void Session::LoginMessage( const string& message )
 	}
 }
 
+void Session::DoWho()
+{
+	vector<User*> users;
+	World::Instance()->GetUsers(users);
+
+	stringstream ss;
+	ss << "--[Users Online]------\r\n";
+	for(vector<User*>::const_iterator user = users.begin(); user != users.end(); ++user)
+	{
+		User* up = *user;
+		if(up->Admin)
+			ss << "[Admin] ";
+		ss << up->Username << " - $" << up->Money << " R" << up->Respect << "\r\n";
+	}
+	Send(ss.str());
+}
+
+void Session::DoSay( const string& message )
+{
+	stringstream ss;
+	ss << _user->Username << ": " << message << "\r\n";
+	World::Instance()->Broadcast(ss.str());
+}
+
+void Session::DoQuit()
+{
+	SendImmediate("Bye\r\n");
+	_shouldQuit = true;
+}
+
+string ExtractCommand(const string& message, string& remainder)
+{
+	size_t idx = message.find(' ');
+	string command;
+	if(string::npos == idx)
+	{
+		command = message;
+		remainder = "";
+	}
+	else
+	{
+		command = message.substr(0, idx);
+		idx = message.find_first_not_of(' ', idx);
+		if(string::npos == idx)
+			remainder = "";
+		else
+			remainder = message.substr(idx);
+	}
+
+	for(idx = 0; idx < command.length(); ++idx)
+	{
+		if(isupper(command[idx]))
+			command[idx] = tolower(command[idx]);
+	}
+
+	return command;
+}
+
 void Session::CommandMessage( const string& message )
 {
-	Log("Command message: " << message);
+	string remainder;
+	string command = ExtractCommand(message, remainder);
+
+	if(command.length() == 0)
+	{
+		Send("Empty command received\r\n");
+		return;
+	}
+
+	switch(command[0])
+	{
+	case 'a':
+		break;
+	case 'b':
+		break;
+	case 'c':
+		// Contracts
+		break;
+	case 'd':
+		break;
+	case 'e':
+		break;
+	case 'f':
+		break;
+	case 'g':
+		break;
+	case 'h':
+		// Help
+		break;
+	case 'i':
+		// Ignore?
+		break;
+	case 'j':
+		break;
+	case 'k':
+		break;
+	case 'l':
+		// Leaderboard
+		break;
+	case 'm':
+		break;
+	case 'n':
+		break;
+	case 'o':
+		// Offer contract
+		break;
+	case 'p':
+		break;
+	case 'q':
+		if("quit" == command)
+		{
+			DoQuit();
+			return;
+		}
+		break;
+	case 'r':
+		// Rate user +/-
+		break;
+	case 's':
+		if("say" == command)
+		{
+			DoSay(remainder);
+			return;
+		}
+		// Stats
+		break;
+	case 't':
+		// Tell
+		break;
+	case 'u':
+		break;
+	case 'v':
+		break;
+	case 'w':
+		if("who" == command)
+		{
+			DoWho();
+			return;
+		}
+		break;
+	case 'x':
+		break;
+	case 'y':
+		break;
+	case 'z':
+		break;
+	}
+
+	SendStream("Unknown command '" << command << "'\r\n");
 }
 
 // NETWORK
@@ -160,6 +324,11 @@ void Session::Send( const string& message )
 	{
 		ChainSend();
 	}
+}
+
+void Session::SendImmediate(const string& message)
+{
+	boost::asio::write(_socket, boost::asio::buffer(message.data(), message.length()));
 }
 
 void Session::HandleSend( const boost::system::error_code& error )
@@ -185,16 +354,31 @@ void Session::HandleSend( const boost::system::error_code& error )
 	}
 }
 
-// TODO
-// Should be attempting to strip the telnet command codes in here
 string StripInput(const char* input)
 {
 	stringstream ss;
+	bool leading = true;
 
 	while(0 != *input)
 	{
-		if(isprint(*input))
+		if(*input & (0x1 << 7))
+		{
+			++input;
+			if(0 == *input)
+				break;
+			++input;
+			if(0 == *input)
+				break;
+			++input;
+
+			continue;
+		}
+
+		if(!(leading && ' ' == *input) && isprint(*input))
+		{
+			leading = false;
 			ss << *input;
+		}
 		++input;
 	}
 
@@ -233,14 +417,7 @@ void Session::HandleRecv( const boost::system::error_code& error, size_t nRecvd 
 		if(line.length() > 1024)
 		{
 			LogWarning("Over long message received, killing session");
-			_socket.close();
-			_closing = true;
-
-			if(!_sending && !_recving)
-			{
-				delete this;
-			}
-
+			Stop();
 			return;
 		}
 		else if(line.length() > 1)
@@ -258,6 +435,9 @@ void Session::HandleRecv( const boost::system::error_code& error, size_t nRecvd 
 		}
 
 		ChainRecv();
+
+		if(_shouldQuit)
+			Stop();
 	}
 	else
 	{

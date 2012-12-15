@@ -18,11 +18,20 @@ public:
 	~Session();
 
 	void Start();
+	void Stop();
+
 	tcp::socket& Socket();
+	User* GetUser();
 
 	void Send(const string& message);
+	void SendImmediate(const string& message);
 
 private:
+	// Commands
+	void DoWho();
+	void DoSay(const string& message);
+	void DoQuit();
+
 	// Auth/create
 	void SendWelcome();
 	void SendPrompt();
@@ -54,6 +63,7 @@ private:
 	bool _closing;
 	bool _sending;
 	bool _recving;
+	bool _shouldQuit;
 };
 
 #endif
