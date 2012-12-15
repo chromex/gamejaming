@@ -6,13 +6,12 @@ Commands
    - Leader boards
    - Current contracts
  - Admin commands
-   - Save
    - Shutdown
 
 Periodic saving of game state
- - User data
  - Corp data
- - Contract data
+
+Encrypt passwords
 
 == Theme ==
 

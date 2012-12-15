@@ -31,6 +31,7 @@ private:
 	void DoWho();
 	void DoSay(const string& message);
 	void DoQuit();
+	void DoSave();
 
 	// Auth/create
 	void SendWelcome();
@@ -52,7 +53,6 @@ private:
 	MessageQueue _sendQueue;
 	int _loginStage;
 	boost::asio::streambuf _buffer;
-	size_t _remainingHeader;
 
 	string _authUsername;
 	string _authPassword;

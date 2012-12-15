@@ -12,6 +12,7 @@ char * Util::LoadFile(const char* filename) {
 	if(!fin)
 	{
 		LogError("Failed to open file for reading: " << filename);
+		return 0;
 	}
 
 	// compute size

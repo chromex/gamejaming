@@ -11,6 +11,7 @@ struct User
 
 	string Username;
 	string Password;
+	string About;
 	size_t Money;
 	size_t Respect;
 	bool Admin;
@@ -23,6 +24,8 @@ public:
 	~Users();
 
 	static Users* Instance();
+
+	void Save() const;
 
 	User* GetUserByUsername(const string& uname);
 	User* CreateUser(const string& uname, const string& password);

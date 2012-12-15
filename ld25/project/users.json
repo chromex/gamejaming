@@ -1,9 +1,1 @@
-[
-	{
-		"Username": "chromex",
-		"Password": "blah",
-		"Admin": true,
-		"Money": 190283129,
-		"Respect": 9001
-	}
-]
+[{"About":"","Admin":true,"Money":9001,"Password":"blah","Respect":9001,"Username":"chromex"},{"About":"","Admin":false,"Money":20000,"Password":"foo","Respect":100,"Username":"pyrakra"}]

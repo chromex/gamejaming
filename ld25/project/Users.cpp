@@ -41,6 +41,7 @@ Users::Users()
 				LJObject::iterator password = obj.find("Password");
 				LJObject::iterator admin = obj.find("Admin");
 				LJObject::iterator money = obj.find("Money");
+				LJObject::iterator about = obj.find("About");
 				LJObject::iterator respect = obj.find("Respect");
 
 				if( obj.end() != username && username->second.IsString() &&
@@ -60,6 +61,11 @@ Users::Users()
 					user->Money = (size_t)money->second.number();
 					user->Respect = (size_t)respect->second.number();
 
+					if(obj.end() != about && about->second.IsString())
+					{
+						user->About = about->second.string();
+					}
+
 					if(obj.end() != admin && admin->second.IsBoolean())
 					{
 						user->Admin = admin->second.boolean();
@@ -73,12 +79,34 @@ Users::Users()
 
 Users::~Users()
 {
-	// TODO write out users
+	Save();
 
 	for(UserVec::iterator up = _users.begin(); up != _users.end(); ++up)
 	{
 		delete *up;
 	}
+}
+
+void Users::Save() const
+{
+	LJArray arr;
+
+	for(UserVec::const_iterator up = _users.begin(); up != _users.end(); ++up)
+	{
+		LJObject entry;
+		entry["Username"] = (*up)->Username;
+		entry["Password"] = (*up)->Password;
+		entry["About"] = (*up)->About;
+		entry["Money"] = (double)((*up)->Money);
+		entry["Respect"] = (double)((*up)->Respect);
+		entry["Admin"] = (*up)->Admin;
+		arr.push_back(entry);
+	}
+
+	string results;
+	Serialize(arr, results);
+
+	Util::WriteFile("users.json", results.data(), results.length());
 }
 
 User* Users::GetUserByUsername( const string& uname )
@@ -110,7 +138,7 @@ User* Users::CreateUser( const string& uname, const string& password )
 	User* user = new User;
 	user->Username = uname;
 	user->Password = password;
-	user->Money = 20000;
+	user->Money = 2000;
 	user->Respect = 100;
 	user->Admin = false;
 	_users.push_back(user);

@@ -4,6 +4,7 @@
 #include "Users.h"
 #include "Colors.h"
 #include "World.h"
+#include "Contracts.h"
 
 #include <istream>
 
@@ -12,7 +13,6 @@
 Session::Session( boost::asio::io_service& service )
 	: _socket(service)
 	, _loginStage(0)
-	, _remainingHeader(0)
 	, _user(0)
 	, _closing(false)
 	, _sending(false)
@@ -168,7 +168,7 @@ void Session::DoWho()
 	World::Instance()->GetUsers(users);
 
 	stringstream ss;
-	ss << "--[Users Online]------\r\n";
+	ss << "--[" << GREENCOLOR << "Users Online" << CLEARCOLOR << "]------\r\n";
 	for(vector<User*>::const_iterator user = users.begin(); user != users.end(); ++user)
 	{
 		User* up = *user;
@@ -190,6 +190,13 @@ void Session::DoQuit()
 {
 	SendImmediate("Bye\r\n");
 	_shouldQuit = true;
+}
+
+void Session::DoSave()
+{
+	Users::Instance()->Save();
+	Contracts::Instance()->Save();
+	SendStream(REDCOLOR << "Saved\r\n" << CLEARCOLOR);
 }
 
 string ExtractCommand(const string& message, string& remainder)
@@ -234,6 +241,7 @@ void Session::CommandMessage( const string& message )
 	switch(command[0])
 	{
 	case 'a':
+		// About <player>
 		break;
 	case 'b':
 		break;
@@ -286,7 +294,13 @@ void Session::CommandMessage( const string& message )
 			DoSay(remainder);
 			return;
 		}
+		if("save" == command && _user->Admin)
+		{
+			DoSave();
+			return;
+		}
 		// Stats
+		// SetAbout
 		break;
 	case 't':
 		// Tell
@@ -391,24 +405,6 @@ void Session::HandleRecv( const boost::system::error_code& error, size_t nRecvd 
 
 	if(!error)
 	{
-		// Deal with the telnet header, really should be watching for command messages
-		if(_remainingHeader > 0)
-		{
-			if(nRecvd < _remainingHeader)
-			{
-				_buffer.consume(nRecvd);
-				_remainingHeader -= nRecvd;
-				ChainRecv();
-				return;
-			}
-			else
-			{
-				_buffer.consume(_remainingHeader);
-				nRecvd -= _remainingHeader;
-				_remainingHeader = 0;
-			}
-		}
-
 		string line;
 		istream is(&_buffer);
 		getline(is, line);
