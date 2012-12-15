@@ -1,6 +1,29 @@
 == Todo ==
 
 Basic sessions
+ - Sessions need to be managed and cleaned up by something
+ - Sum up running async stuff, when it hits zero auto kill?
+
+Finish auth
+ - New user
+ - Old user
+
+Commands
+ - Status commands
+   - Player stats
+   - Who is online
+   - Leader boards
+   - Current contracts
+ - Admin commands
+   - Save
+   - Shutdown
+
+Periodic saving of game state
+ - User data
+ - Corp data
+ - Contract data
+
+Trigger data loads at startup
 
 == Theme ==
 

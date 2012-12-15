@@ -53,8 +53,8 @@ Users::Users()
 					User* user = new User;
 					user->Username = username->second.string();
 					user->Password = password->second.string();
-					user->Money = money->second.number();
-					user->Respect = respect->second.number();
+					user->Money = (size_t)money->second.number();
+					user->Respect = (size_t)respect->second.number();
 
 					if(obj.end() != admin && admin->second.IsBoolean())
 					{

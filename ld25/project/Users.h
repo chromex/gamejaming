@@ -11,8 +11,8 @@ struct User
 
 	string Username;
 	string Password;
-	int Money;
-	int Respect;
+	size_t Money;
+	size_t Respect;
 	bool Admin;
 };
 

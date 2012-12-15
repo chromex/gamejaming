@@ -45,7 +45,7 @@ void Session::SendPrompt()
 // TODO
 // Vet password
 // Vet handle
-// Strip all illegal characters from input
+// Strip all illegal characters from input (alnum and punct)
 // Strip telnet command codes
 // Colorizing of sent data
 
@@ -68,6 +68,7 @@ void Session::LoginMessage( const string& message )
 			else
 			{
 				Log("Old user");
+				_loginStage = -1;
 			}
 		}
 		break;
