@@ -1,8 +1,10 @@
 #include "Users.h"
 #include "Util.h"
 #include "Log.h"
-
+#include "Settings.h"
 #include "LawlJSON.h"
+
+#include <algorithm>
 
 Users::Users()
 {
@@ -75,6 +77,8 @@ Users::Users()
 			}
 		}
 	}
+
+	Tick();
 }
 
 Users::~Users()
@@ -147,6 +151,46 @@ User* Users::CreateUser( const string& uname, const string& password )
 	Log("New user created: " << uname);
 
 	return user;
+}
+
+bool CompareUser(User* a, User* b)
+{
+	return a->Money > b->Money;
+}
+
+const vector<User*>& Users::GetLeaders()
+{
+	return _leaders;
+}
+
+void Users::ComputeLeaders( size_t nPositions )
+{
+	_leaders.clear();
+
+	for(UserVec::const_iterator up = _users.begin(); up != _users.end(); ++up)
+	{
+		if(_leaders.size() < nPositions)
+		{
+			_leaders.push_back(*up);
+
+			if(_leaders.size() == nPositions)
+			{
+				sort(_leaders.begin(), _leaders.end(), CompareUser);
+			}
+		}
+		else if((*up)->Money > _leaders[nPositions-1]->Money)
+		{
+			_leaders[nPositions-1] = *up;
+			sort(_leaders.begin(), _leaders.end(), CompareUser);
+		}
+	}
+
+	sort(_leaders.begin(), _leaders.end(), CompareUser);
+}
+
+void Users::Tick()
+{
+	ComputeLeaders(Settings::numLeaders);
 }
 
 User::User()

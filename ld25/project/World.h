@@ -19,6 +19,7 @@ public:
 	void RemoveSession(Session* session);
 	void Broadcast(const string& message);
 	void GetUsers(vector<User*>& users);
+	Session* GetSession(const string& username);
 
 private:
 	typedef map<string, Session*> SessionMap;

@@ -207,6 +207,29 @@ void Session::DoWho()
 	Send(ss.str());
 }
 
+void Session::DoHelp(const string& message)
+{
+	SendStream("--[" << GREENCOLOR << "Help Topics" << CLEARCOLOR << "]------\r\n");
+	SendStream("game\r\nchat\r\ncontracts\r\ncorps\r\n");
+}
+
+void Session::DoLeaders()
+{
+	const vector<User*>& users = Users::Instance()->GetLeaders();
+
+	int pos = 1;
+
+	stringstream ss;
+	ss << "--[" << GREENCOLOR << "Leaders" << CLEARCOLOR << "]------\r\n";
+	for(vector<User*>::const_iterator up = users.begin(); up != users.end(); ++up)
+	{
+		ss << pos << " - " << (*up)->Username << " $" << (*up)->Money << "\r\n";
+		++pos;
+	}
+
+	Send(ss.str());
+}
+
 void Session::DoAbout( const string& message )
 {
 	string remainder;
@@ -229,6 +252,29 @@ void Session::DoAbout( const string& message )
 	SendStream(user->About << "\r\n");
 	SendStream("Money: $" << user->Money << "\r\n");
 	SendStream("Respect: R" << user->Respect << "\r\n");
+}
+
+void Session::DoTell( const string& message )
+{
+	string remainder;
+	string username = ExtractCommand(message, remainder);
+
+	if(0 == username.length() || 0 == remainder.length())
+	{
+		Send("Syntax: tell <user> <message>\r\n");
+		return;
+	}
+
+	Session* session = World::Instance()->GetSession(username);
+	if(0 == session)
+	{
+		SendStream("No user named '" << username << "' is online\r\n");
+		return;
+	}
+
+	stringstream ss;
+	ss << _user->Username << " whispers: " << remainder << "\r\n";
+	session->Send(ss.str());
 }
 
 void Session::DoSay( const string& message )
@@ -291,7 +337,11 @@ void Session::CommandMessage( const string& message )
 	case 'g':
 		break;
 	case 'h':
-		// Help
+		if("help" == command)
+		{
+			DoHelp(remainder);
+			return;
+		}
 		break;
 	case 'i':
 		// Ignore?
@@ -301,7 +351,11 @@ void Session::CommandMessage( const string& message )
 	case 'k':
 		break;
 	case 'l':
-		// Leaderboard
+		if("leaders")
+		{
+			DoLeaders();
+			return;
+		}
 		break;
 	case 'm':
 		break;
@@ -341,7 +395,11 @@ void Session::CommandMessage( const string& message )
 		// Stats
 		break;
 	case 't':
-		// Tell
+		if("tell" == command)
+		{
+			DoTell(remainder);
+			return;
+		}
 		break;
 	case 'u':
 		break;

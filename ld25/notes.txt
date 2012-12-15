@@ -3,6 +3,8 @@
 Server
  - Check usernames for only alnum
 
+Finish help
+
 Commands
  - Status commands
    - Player stats

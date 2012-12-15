@@ -26,13 +26,18 @@ public:
 	static Users* Instance();
 
 	void Save() const;
+	void Tick();
 
 	User* GetUserByUsername(const string& uname);
 	User* CreateUser(const string& uname, const string& password);
+	const vector<User*>& GetLeaders();
 
 private:
+	void ComputeLeaders(size_t nPositions);
+
 	typedef vector<User*> UserVec;
 	UserVec _users;
+	UserVec _leaders;
 };
 
 #endif

@@ -75,3 +75,12 @@ void World::GetUsers( vector<User*>& users )
 		users.push_back(entry->second->GetUser());
 	}
 }
+
+Session* World::GetSession( const string& username )
+{
+	SessionMap::iterator session = _sessions.find(username);
+	if(session == _sessions.end())
+		return 0;
+	else
+		return session->second;
+}

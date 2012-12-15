@@ -29,11 +29,14 @@ public:
 private:
 	// Commands
 	void DoAbout(const string& message);
+	void DoHelp(const string& message);
 	void DoWho();
 	void DoSay(const string& message);
 	void DoQuit();
 	void DoSave();
 	void DoSetAbout(const string& message);
+	void DoTell(const string& message);
+	void DoLeaders();
 
 	// Auth/create
 	void SendWelcome();
