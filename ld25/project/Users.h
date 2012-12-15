@@ -5,15 +5,15 @@
 #include <vector>
 using namespace std;
 
-#include <boost/uuid/uuid.hpp>
-
 struct User
 {
+	User();
+
 	string Username;
 	string Password;
 	int Money;
 	int Respect;
-	boost::uuids::uuid ID;
+	bool Admin;
 };
 
 class Users

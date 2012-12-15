@@ -1,10 +1,70 @@
 #include "Users.h"
+#include "Util.h"
+#include "Log.h"
 
-#include <boost/uuid/uuid_generators.hpp>
+#include "LawlJSON.h"
 
 Users::Users()
 {
-	// TODO read in users
+	char* data = Util::LoadFile("users.json");
+	if(0 == data)
+	{
+		LogError("Could not load user data from users.json");
+		return;
+	}
+
+	LJValue results;
+
+	try
+	{
+		ParseJSON(data, results);
+	}
+	catch(std::exception& e)
+	{
+		LogError("Error parsing JSON data: " << e.what());
+	}
+
+	if(results.IsArray())
+	{
+		LJArray& arr = results.array();
+		for(LJArray::iterator entry = arr.begin(); entry != arr.end(); ++entry)
+		{
+			if(entry->IsObject())
+			{
+				LJObject& obj = entry->object();
+
+				LJObject::iterator username = obj.find("Username");
+				LJObject::iterator password = obj.find("Password");
+				LJObject::iterator admin = obj.find("Admin");
+				LJObject::iterator money = obj.find("Money");
+				LJObject::iterator respect = obj.find("Respect");
+
+				if( obj.end() != username && username->second.IsString() &&
+					obj.end() != password && password->second.IsString() &&
+					obj.end() != money && money->second.IsNumber() &&
+					obj.end() != respect && respect->second.IsNumber())
+				{
+					if(0 != GetUserByUsername(username->second.string()))
+					{
+						LogWarning("Duplicate user entry found, skipping");
+						continue;
+					}
+
+					User* user = new User;
+					user->Username = username->second.string();
+					user->Password = password->second.string();
+					user->Money = money->second.number();
+					user->Respect = respect->second.number();
+
+					if(obj.end() != admin && admin->second.IsBoolean())
+					{
+						user->Admin = admin->second.boolean();
+					}
+					_users.push_back(user);
+				}
+			}
+		}
+	}
 }
 
 Users::~Users()
@@ -35,3 +95,9 @@ Users* Users::Instance()
 	static Users db;
 	return &db;
 }
+
+User::User()
+	: Money(0)
+	, Respect(0)
+	, Admin(false)
+{}
