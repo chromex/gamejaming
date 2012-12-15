@@ -7,12 +7,14 @@
 Server::Server( int port )
 	: _acceptor(_service, tcp::endpoint(tcp::v4(), port))
 	, _timer(_service, boost::posix_time::seconds(Settings::saveTicks))
+	, _tickTimer(_service, boost::posix_time::seconds(Settings::updateTicks))
 {
 	Log("Listening on port: " << port);
 
 	ChainAccept();
 
 	_timer.async_wait(boost::bind(&Server::SaveTick, this, boost::asio::placeholders::error));
+	_tickTimer.async_wait(boost::bind(&Server::UpdateTick, this, boost::asio::placeholders::error));
 }
 
 Server::~Server()
@@ -58,5 +60,20 @@ void Server::SaveTick( const boost::system::error_code& error )
 	else
 	{
 		LogError("Save tick encountered an error?!");
+	}
+}
+
+void Server::UpdateTick( const boost::system::error_code& error )
+{
+	if(!error)
+	{
+		Users::Instance()->Tick();
+
+		_tickTimer.expires_at(_tickTimer.expires_at() + boost::posix_time::seconds(Settings::updateTicks));
+		_tickTimer.async_wait(boost::bind(&Server::UpdateTick, this, boost::asio::placeholders::error));
+	}
+	else
+	{
+		LogError("Update tick encountered an error?!");
 	}
 }
