@@ -42,6 +42,11 @@ private:
 	int _loginStage;
 	boost::asio::streambuf _buffer;
 	size_t _remainingHeader;
+
+	// Dead session handling
+	bool _closing;
+	bool _sending;
+	bool _recving;
 };
 
 #endif

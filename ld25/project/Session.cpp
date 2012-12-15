@@ -6,16 +6,21 @@
 
 #include <istream>
 
-#define SendStream(S) {stringstream ss; ss << S;Send(ss.str());}
+#define SendStream(S) {stringstream ss; ss << S; Send(ss.str());}
 
 Session::Session( boost::asio::io_service& service )
 	: _socket(service)
 	, _loginStage(0)
 	, _remainingHeader(21)
+	, _closing(false)
+	, _sending(false)
+	, _recving(false)
 {}
 
 Session::~Session()
-{}
+{
+	Log("Session destroyed");
+}
 
 tcp::socket& Session::Socket()
 {
@@ -107,6 +112,8 @@ void Session::Send( const string& message )
 
 void Session::HandleSend( const boost::system::error_code& error )
 {
+	_sending = false;
+
 	if(!error)
 	{
 		_sendQueue.pop();
@@ -117,12 +124,19 @@ void Session::HandleSend( const boost::system::error_code& error )
 	}
 	else
 	{
-		Log("Error on send: " << error);
+		_closing = true;
+
+		if(!_sending && !_recving)
+		{
+			delete this;
+		}
 	}
 }
 
 void Session::HandleRecv( const boost::system::error_code& error, size_t nRecvd )
 {
+	_recving = false;
+
 	if(!error)
 	{
 		// Deal with the telnet header, really should be watching for command messages
@@ -147,9 +161,20 @@ void Session::HandleRecv( const boost::system::error_code& error, size_t nRecvd 
 		istream is(&_buffer);
 		getline(is, line);
 
-		// TODO if the line is super long, kill this session
+		if(line.length() > 50)
+		{
+			LogWarning("Over long message received, killing session");
+			_socket.close();
+			_closing = true;
 
-		if(line.length() > 1)
+			if(!_sending && !_recving)
+			{
+				delete this;
+			}
+
+			return;
+		}
+		else if(line.length() > 1)
 		{
 			if(_loginStage > 0)
 			{
@@ -167,21 +192,34 @@ void Session::HandleRecv( const boost::system::error_code& error, size_t nRecvd 
 	}
 	else
 	{
-		Log("Error on recv: " << error);
+		_closing = true;
+
+		if(!_sending && !_recving)
+		{
+			delete this;
+		}
 	}
 }
 
 void Session::ChainSend()
 {
-	boost::asio::async_write(_socket,
-		boost::asio::buffer(_sendQueue.front().data(), _sendQueue.front().length()),
-		boost::bind(&Session::HandleSend, this, boost::asio::placeholders::error));
+	if(!_closing)
+	{
+		_sending = true;
+		boost::asio::async_write(_socket,
+			boost::asio::buffer(_sendQueue.front().data(), _sendQueue.front().length()),
+			boost::bind(&Session::HandleSend, this, boost::asio::placeholders::error));
+	}
 }
 
 void Session::ChainRecv()
 {
-	boost::asio::async_read_until(_socket,
-		_buffer,
-		"\r\n",
-		boost::bind(&Session::HandleRecv, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+	if(!_closing)
+	{
+		_recving = true;
+		boost::asio::async_read_until(_socket,
+			_buffer,
+			"\r\n",
+			boost::bind(&Session::HandleRecv, this, boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+	}
 }

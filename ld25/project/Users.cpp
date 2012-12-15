@@ -21,8 +21,12 @@ Users::Users()
 	}
 	catch(std::exception& e)
 	{
+		delete[] data;
 		LogError("Error parsing JSON data: " << e.what());
+		return;
 	}
+
+	delete[] data;
 
 	if(results.IsArray())
 	{

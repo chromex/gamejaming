@@ -1,9 +1,5 @@
 == Todo ==
 
-Basic sessions
- - Sessions need to be managed and cleaned up by something
- - Sum up running async stuff, when it hits zero auto kill?
-
 Finish auth
  - New user
  - Old user
