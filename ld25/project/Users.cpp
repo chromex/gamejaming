@@ -221,7 +221,7 @@ void Users::Tick()
 		{
 			boost::posix_time::time_duration td = boost::posix_time::second_clock::local_time() - ptr->StartTime;
 
-			if(td.minutes() > 60)
+			if(td.hours() > 0)
 			{
 				ptr->Done = true;
 				Log(ptr->Username << "'s time is up");

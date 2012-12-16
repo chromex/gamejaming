@@ -351,6 +351,12 @@ void Contracts::AcceptOffer( Session* sender, const string& other, bool evil )
 		return;
 	}
 
+	if(otherUser->Done)
+	{
+		sender->Send("I can't let you do that, the other user is already out of time.\r\n");
+		return;
+	}
+
 	Contract *c = 0;
 	for(ContractVec::iterator contract = offers.begin(); contract != offers.end(); ++contract)
 	{
