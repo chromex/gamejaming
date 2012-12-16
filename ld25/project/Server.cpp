@@ -68,6 +68,7 @@ void Server::UpdateTick( const boost::system::error_code& error )
 	if(!error)
 	{
 		Users::Instance()->Tick();
+		Contracts::Instance()->Tick();
 
 		_tickTimer.expires_at(_tickTimer.expires_at() + boost::posix_time::seconds(Settings::updateTicks));
 		_tickTimer.async_wait(boost::bind(&Server::UpdateTick, this, boost::asio::placeholders::error));

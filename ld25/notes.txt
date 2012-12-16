@@ -8,7 +8,6 @@ Finish help
 Commands
  - Status commands
    - Player stats
-   - Leader boards
    - Current contracts
 
 Periodic saving of game state

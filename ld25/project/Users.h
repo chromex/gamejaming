@@ -28,7 +28,7 @@ public:
 	void Save() const;
 	void Tick();
 
-	User* GetUserByUsername(const string& uname);
+	User* GetUserByUsername(string uname);
 	User* CreateUser(const string& uname, const string& password);
 	const vector<User*>& GetLeaders();
 

@@ -37,6 +37,11 @@ private:
 	void DoSetAbout(const string& message);
 	void DoTell(const string& message);
 	void DoLeaders();
+	void DoOffer(const string& message);
+	void DoOffers();
+	void DoContracts();
+	void DoAccept(const string& message);
+	void DoReject(const string& message);
 
 	// Auth/create
 	void SendWelcome();

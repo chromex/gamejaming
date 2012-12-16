@@ -8,6 +8,8 @@ public:
 	static const int saveTicks = 60;
 	static const int updateTicks = 15;
 	static const int numLeaders = 10;
+	static const int maxContracts = 5;
+	static const int maxDuration = 5;
 
 	/*
 	static const char* title =

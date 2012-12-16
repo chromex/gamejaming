@@ -2,6 +2,8 @@
 #include "Log.h"
 #include "Session.h"
 
+#include <algorithm>
+
 World::World()
 {
 
@@ -36,6 +38,8 @@ void World::AddSession( Session* session )
 	}
 
 	string username = session->GetUser()->Username;
+	std::transform(username.begin(), username.end(), username.begin(), ::tolower);
+
 	if(_sessions.find(username) == _sessions.end())
 	{
 		_sessions[username] = session;
@@ -76,8 +80,9 @@ void World::GetUsers( vector<User*>& users )
 	}
 }
 
-Session* World::GetSession( const string& username )
+Session* World::GetSession( string username )
 {
+	std::transform(username.begin(), username.end(), username.begin(), ::tolower);
 	SessionMap::iterator session = _sessions.find(username);
 	if(session == _sessions.end())
 		return 0;

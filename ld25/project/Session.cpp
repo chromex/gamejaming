@@ -303,6 +303,107 @@ void Session::DoSave()
 	SendStream(REDCOLOR << "Saved\r\n" << CLEARCOLOR);
 }
 
+void Session::DoOffer( const string& message )
+{
+	string remainder;
+	string myAmountStr = ExtractCommand(message, remainder);
+	string target = ExtractCommand(remainder, remainder);
+	string theirAmountStr = ExtractCommand(remainder, remainder);
+	string timeStr = ExtractCommand(remainder, remainder);
+
+	if(0 == myAmountStr.length() || 0 == target.length() || 0 == theirAmountStr.length() || 0 == timeStr.length())
+	{
+		Send("Syntax: offer <my amount> <target user> <their amount> <minutes>\r\n");
+		return;
+	}
+
+	int myAmount = atoi(myAmountStr.c_str());
+	int theirAmount = atoi(theirAmountStr.c_str());
+	int time = atoi(timeStr.c_str());
+
+	if(0 >= myAmount || 0 >= theirAmount || 0 >= time)
+	{
+		Send("Syntax: offer <my amount> <target user> <their amount> <minutes>\r\n");
+		return;
+	}
+
+	time = min(Settings::maxDuration, time);
+
+	Contracts::Instance()->CreateContract(this, myAmount, target, theirAmount, time);
+}
+
+void Session::DoOffers()
+{
+	vector<Contract*> offers;
+	Contracts::Instance()->GetOffers(_user, offers);
+
+	stringstream ss;
+	ss << "--[" << GREENCOLOR << "Offers" << CLEARCOLOR << "]------\r\n";
+
+	if(0 == offers.size())
+	{
+		ss << "No pending offers.\r\n";
+	}
+
+	for(vector<Contract*>::iterator offer = offers.begin(); offer != offers.end(); ++offer)
+	{
+		Contract* ptr = *offer;
+		ss << ptr->User1 << " (" << ptr->User1Contribution << ") <-> (" << ptr->User2Contribution << ") " << ptr->User2 << " -- " << ptr->Duration << " minutes\r\n";
+	}
+
+	Send(ss.str());
+}
+
+void Session::DoContracts()
+{
+	vector<Contract*> contracts;
+	Contracts::Instance()->GetContracts(_user, contracts);
+
+	stringstream ss;
+	ss << "--[" << GREENCOLOR << "Contracts " << contracts.size() << "/" << Settings::maxContracts << CLEARCOLOR << "]------\r\n";
+
+	if(0 == contracts.size())
+	{
+		ss << "No existing contracts.\r\n";
+	}
+
+	for(vector<Contract*>::iterator contract = contracts.begin(); contract != contracts.end(); ++contract)
+	{
+		Contract* ptr = *contract;
+		ss << ptr->User1 << " (" << ptr->User1Contribution << ") <-> (" << ptr->User2Contribution << ") " << ptr->User2 << " -- " << ptr->Duration << " minutes\r\n";
+	}
+
+	Send(ss.str());
+}
+
+void Session::DoAccept(const string& message)
+{
+	string remainder;
+	string target = ExtractCommand(message, remainder);
+
+	if(0 == target.length())
+	{
+		Send("Syntax: accept <user>\r\n");
+		return;
+	}
+
+	Contracts::Instance()->AcceptOffer(this, target);
+}
+
+void Session::DoReject(const string& message)
+{
+	string remainder;
+	string target = ExtractCommand(message, remainder);
+
+	if(0 == target.length())
+	{
+		Send("Syntax: reject <user>\r\n");
+		return;
+	}
+
+	Contracts::Instance()->RejectOffer(this, target);
+}
+
 void Session::CommandMessage( const string& message )
 {
 	string remainder;
@@ -322,11 +423,20 @@ void Session::CommandMessage( const string& message )
 			DoAbout(remainder);
 			return;
 		}
+		else if("accept" == command)
+		{
+			DoAccept(remainder);
+			return;
+		}
 		break;
 	case 'b':
 		break;
 	case 'c':
-		// Contracts
+		if("contracts" == command)
+		{
+			DoContracts();
+			return;
+		}
 		break;
 	case 'd':
 		break;
@@ -351,7 +461,7 @@ void Session::CommandMessage( const string& message )
 	case 'k':
 		break;
 	case 'l':
-		if("leaders")
+		if("leaders" == command)
 		{
 			DoLeaders();
 			return;
@@ -362,7 +472,16 @@ void Session::CommandMessage( const string& message )
 	case 'n':
 		break;
 	case 'o':
-		// Offer contract
+		if("offer" == command)
+		{
+			DoOffer(remainder);
+			return;
+		}
+		else if("offers" == command)
+		{
+			DoOffers();
+			return;
+		}
 		break;
 	case 'p':
 		break;
@@ -375,6 +494,11 @@ void Session::CommandMessage( const string& message )
 		break;
 	case 'r':
 		// Rate user +/-
+		if("reject" == command)
+		{
+			DoReject(remainder);
+			return;
+		}
 		break;
 	case 's':
 		if("say" == command)
@@ -382,12 +506,12 @@ void Session::CommandMessage( const string& message )
 			DoSay(remainder);
 			return;
 		}
-		if("save" == command && _user->Admin)
+		else if("save" == command && _user->Admin)
 		{
 			DoSave();
 			return;
 		}
-		if("setabout" == command)
+		else if("setabout" == command)
 		{
 			DoSetAbout(remainder);
 			return;
@@ -512,7 +636,7 @@ void Session::HandleRecv( const boost::system::error_code& error, size_t nRecvd 
 			Stop();
 			return;
 		}
-		else if(line.length() > 1)
+		else if(line.length() > 0)
 		{
 			if(_loginStage > 0)
 			{

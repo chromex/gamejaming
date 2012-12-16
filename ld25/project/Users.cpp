@@ -113,11 +113,15 @@ void Users::Save() const
 	Util::WriteFile("users.json", results.data(), results.length());
 }
 
-User* Users::GetUserByUsername( const string& uname )
+User* Users::GetUserByUsername( string uname )
 {
+	std::transform(uname.begin(), uname.end(), uname.begin(), ::tolower);
+
 	for(UserVec::const_iterator up = _users.begin(); up != _users.end(); ++up)
 	{
-		if((*up)->Username == uname)
+		string other = (*up)->Username;
+		std::transform(other.begin(), other.end(), other.begin(), ::tolower);
+		if(other == uname)
 		{
 			return *up;
 		}
