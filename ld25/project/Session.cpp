@@ -149,6 +149,9 @@ void Session::LoginMessage( const string& message )
 					SendStream("Created user '" << _authUsername << "' with password '" << _authPassword << "'\r\n");
 					_loginStage = -1;
 					World::Instance()->AddSession(this);
+
+					DoHelp("story");
+					SendStream(REDCOLOR << "\r\nNew to the game? Try 'help game', 'help contracts', and 'help commands'\r\n" << CLEARCOLOR);
 				}
 				else
 				{
@@ -226,15 +229,121 @@ void Session::DoWho()
 		User* up = *user;
 		if(up->Admin)
 			ss << "[Admin] ";
-		ss << up->Username << " - $" << up->Money << " R" << up->Respect << "\r\n";
+		ss << up->Username << " - $" << up->Money << " R" << up->Respect << " - " << up->About.substr(0,30) << "\r\n";
 	}
 	Send(ss.str());
 }
 
 void Session::DoHelp(const string& message)
 {
-	SendStream("--[" << GREENCOLOR << "Help Topics" << CLEARCOLOR << "]------\r\n");
-	SendStream("game\r\nchat\r\ncontracts\r\ncorps\r\n");
+	string remainder;
+	string topic = ExtractCommand(message, remainder);
+
+	if("commands" == topic)
+	{
+		stringstream ss;
+		ss << "--[" << GREENCOLOR << "Help - Commands" << CLEARCOLOR << "]------\r\n";
+		ss << "[" << REDCOLOR << "Social Commands" << CLEARCOLOR << "]\r\n";
+		ss << GREENCOLOR << "about" << CLEARCOLOR << " <player> - Get information about the player\r\n";
+		ss << GREENCOLOR << "setabout" << CLEARCOLOR << " <message> - Set the message for your 'about' page\r\n";
+		ss << GREENCOLOR << "say" << CLEARCOLOR << " <message> - Send a message on global chat\r\n";
+		ss << GREENCOLOR << "tell" << CLEARCOLOR << " <player> <message> - Send the online player a message\r\n";
+		ss << GREENCOLOR << "leaders" << CLEARCOLOR << " - Show the richest players ever\r\n";
+		ss << GREENCOLOR << "who" << CLEARCOLOR << " - Show online players\r\n\r\n";
+		ss << "[" << REDCOLOR << "Contract List Commands" << CLEARCOLOR << "]\r\n";
+		ss << GREENCOLOR << "offers" << CLEARCOLOR << " - Show pending offers that involve you\r\n";
+		ss << GREENCOLOR << "contracts" << CLEARCOLOR << " - Show currently running contracts that involve you\r\n";
+		ss << GREENCOLOR << "results" << CLEARCOLOR << " - Show contracts that have completed that involve you\r\n\r\n";
+		ss << "[" << REDCOLOR << "Contract Commands" << CLEARCOLOR << "]\r\n";
+		ss << GREENCOLOR << "accept" << CLEARCOLOR << " <player> - Accept the offer from the player\r\n";
+		ss << GREENCOLOR << "evilaccept" << CLEARCOLOR << " <player> - Backstab on the offer from the player\r\n";
+		ss << GREENCOLOR << "offer" << CLEARCOLOR << " <investment1> <player> <investment2> <duration>\r\n";
+		ss << "  - Offer a contract, you invest investment1, they invest investment2\r\n";
+		ss << GREENCOLOR << "eviloffer" << CLEARCOLOR << " <investment1> <player> <investment2> <duration>\r\n";
+		ss << "  - Offer a backstab contract with the player\r\n";
+		ss << GREENCOLOR << "reject" << CLEARCOLOR << " <player> - Reject the offer from the player\r\n";
+		ss << GREENCOLOR << "rate" << CLEARCOLOR << " <id> <player> <rating> - Rate the player on the finished contract\r\n";
+
+		Send(ss.str());
+	}
+	else if("game" == topic)
+	{
+		stringstream ss;
+
+		ss << "--[" << GREENCOLOR << "Help - Game" << CLEARCOLOR << "]------\r\n";
+
+		ss << "The point of the game is to make money on contracts with a prisoner's dilemma\r\n";
+		ss << "twist. Either or both of the players involved in a contract can choose to\r\n";
+		ss << "backstab the other with the \"evil\" versions of the offer and accept commands.\r\n";
+		ss << "If neither uses the evil version, both players profit. If both are evil, both\r\n";
+		ss << "loose everything invested as well as the contract slot for its duration. And\r\n";
+		ss << "if only one is evil, then they take all of the money for themselves. Whether\r\n";
+		ss << "or not you got screwed is not known until the contract is complete.\r\n\r\n";
+
+		ss << "Since you only have one hour to make as much money as you can, picking who you\r\n";
+		ss << "make deals with and if you screw them over is paramount. To facilitate this\r\n";
+		ss << "players can chat globally (say) and privately (tell) and can see info about\r\n";
+		ss << "players (about). \r\n\r\n";
+
+		ss << "To aid in this, a reputation system is in place. Each player starts with 10\r\n";
+		ss << "reputation. When a contract completes, both players involved can rate the\r\n";
+		ss << "contract interaction in the range of -3 to +3. This is applied to the other\r\n";
+		ss << "player and is reflected on their public reputation where higher is better.\r\n";
+
+		Send(ss.str());
+	}
+	else if("story" == topic)
+	{
+		stringstream ss;
+
+		ss << "--[" << GREENCOLOR << "Help - Story" << CLEARCOLOR << "]------\r\n";
+		ss << "Money. Its all about the damn money. To make everything \"fair\" it was decided\r\n";
+		ss << "in the year 2025 to make it so everyone had access to the trade markets. The\r\n";
+		ss << "problem? You only get one shot. For one hour.\r\n\r\n";
+
+		ss << "Everyone is given a preset amount of cash and once you start trading, you have\r\n";
+		ss << "one hour to make as much money as you can. Whats going on behind the trades?\r\n";
+		ss << "It doesn't matter any more. Its just a system.\r\n\r\n";
+
+		ss << "Once the hour is up, you'll still be able to connect to the system but you can\r\n";
+		ss << "no longer trade. No longer make more money. You failed? Whelp, your boned. \r\n\r\n";
+
+		ss << "Don't fail.\r\n";
+
+		Send(ss.str());
+	}
+	else if("contracts" == topic)
+	{
+		stringstream ss;
+
+		ss << "--[" << GREENCOLOR << "Help - Contracts" << CLEARCOLOR << "]------\r\n";
+		ss << "Contracts are how you make money. To create a contract, one player makes an\r\n";
+		ss << "offer to another with the contract details. The other player can choose to\r\n";
+		ss << "accept or reject the contract. Once accepted the contract lasts the specified\r\n";
+		ss << "duration. Any one player can only have a maximum of 5 open contracts at a \r\n";
+		ss << "time. The \"offer\" and \"accept\" have evil versions called \"eviloffer\" and \r\n";
+		ss << "\"evilaccept\", the effects of which are described in \"help game\".\r\n\r\n";
+
+		ss << "The parameters of the offer commands are:\r\n";
+		ss << "  - offer <investment1> <player> <investment2> <duration>\r\n\r\n";
+
+		ss << "investment1 - The investment of the offering player\r\n";
+		ss << "player - The player you are making the offer to\r\n";
+		ss << "investment2 - How much the other player is supposed to invest\r\n";
+		ss << "duration - How long the contract lasts in minutes if accepted, max of 5\r\n\r\n";
+
+		ss << "Profit multipliers increase with duration. At 1 minute, each player makes\r\n";
+		ss << "back their investment plus the average of both investments and at 5 minutes\r\n";
+		ss << "each makes back their investment plus 16x the average of their investments!\r\n";
+
+		Send(ss.str());
+	}
+	else
+	{
+		SendStream("--[" << GREENCOLOR << "Help Topics" << CLEARCOLOR << "]------\r\n");
+		Send("Syntax: help <topic>\r\n[Topics]\r\n");
+		Send("commands\r\ngame\r\nstory\r\ncontracts\r\n");
+	}
 }
 
 void Session::DoLeaders()
@@ -297,10 +406,10 @@ void Session::DoTell( const string& message )
 	}
 
 	stringstream ss;
-	ss << _user->Username << " whispers: " << remainder << "\r\n";
+	ss << _user->Username << " whispers: " << remainder.substr(0,256) << "\r\n";
 	session->Send(ss.str());
 
-	Log(_user->Username << " whispers to " << session->GetUser()->Username << ": " << remainder);
+	Log(_user->Username << " whispers to " << session->GetUser()->Username << ": " << remainder.substr(0,256));
 }
 
 void Session::DoSay( const string& message )
@@ -308,10 +417,10 @@ void Session::DoSay( const string& message )
 	if(message.length() > 0)
 	{
 		stringstream ss;
-		ss << "<" << _user->Username << "> " << message << "\r\n";
+		ss << "<" << _user->Username << "> " << message.substr(0,256) << "\r\n";
 		World::Instance()->Broadcast(ss.str());
 
-		Log(_user->Username << " says: " << message);
+		Log(_user->Username << " says: " << message.substr(0,256));
 	}
 	else
 	{
@@ -321,8 +430,8 @@ void Session::DoSay( const string& message )
 
 void Session::DoSetAbout( const string& message )
 {
-	_user->About = message;
-	SendStream("About set to:\r\n" << message << "\r\n");
+	_user->About = message.substr(0,80);
+	SendStream("About set to:\r\n" << _user->About << "\r\n");
 }
 
 void Session::DoQuit()

@@ -44,3 +44,55 @@ You are the villain
 - Can log in or create a new account
 - Accounts are a user name, password, and handle + uuid
 - If the user is already logged in, kick the other session(s)
+
+[Story]
+Money. Its all about the damn money. To make everything "fair" it was decided
+in the year 2025 to make it so everyone had access to the trade markets. The
+problem? You only get one shot. For one hour.
+
+Everyone is given a preset amount of cash and once you start trading, you have
+one hour to make as much money as you can. Whats going on behind the trades?
+It doesn't matter any more. Its just a system.
+
+Once the hour is up, you'll still be able to connect to the system but you can
+no longer trade. No longer make more money. You failed? Whelp, your boned. 
+
+Don't fail.
+
+[Game]
+The point of the game is to make money on contracts with a prisoner's dilemma
+twist. Either or both of the players involved in a contract can choose to
+backstab the other with the "evil" versions of the offer and accept commands.
+If neither uses the evil version, both players profit. If both are evil, both
+loose everything invested as well as the contract slot for its duration. And
+if only one is evil, then they take all of the money for themselves.
+
+Since you only have one hour to make as much money as you can, picking who you
+make deals with and if you screw them over is paramount. To facilitate this
+players can chat globally (say) and privately (tell) and can see info about
+players (about). 
+
+To aid in this, a reputation system is in place. Each player starts with 10
+reputation. When a contract completes, both players involved can rate the
+contract interaction in the range of -3 to +3. This is applied to the other
+player and is reflected on their public reputation.
+
+[Contracts]
+Contracts are how you make money. To create a contract, one player makes an
+offer to another with the contract details. The other player can choose to
+accept or reject the contract. Once accepted the contract lasts the specified
+duration. Any one player can only have a maximum of 5 open contracts at a 
+time. The \"offer\" and \"accept\" have evil versions called \"eviloffer\" and 
+\"evilaccept\", the effects of which are described in \"help game\".
+
+The parameters of the offer commands are:
+  - offer <investment1> <player> <investment2> <duration>
+
+investment1 - The investment of the offering player
+player - The player you are making the offer to
+investment2 - How much the other player is supposed to invest
+duration - How long the contract lasts in minutes if accepted
+
+Profit multipliers increase with duration. At 1 minute, each player makes
+back their investment plus the average of both investments and at 5 minutes
+each makes back their investment plus 16x the average of their investments!
