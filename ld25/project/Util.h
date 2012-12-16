@@ -1,6 +1,9 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <string>
+using namespace std;
+
 namespace Util
 {
 	char * LoadFile(const char* filename);

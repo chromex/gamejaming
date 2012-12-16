@@ -20,7 +20,5 @@ int main(int argc, char** argv)
 
 	Log("Stopping LD25");
 
-	system("pause");
-
 	return 0;
 }
