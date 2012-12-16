@@ -376,6 +376,28 @@ void Session::DoContracts()
 	Send(ss.str());
 }
 
+void Session::DoResults()
+{
+	vector<Contract*> contracts;
+	Contracts::Instance()->GetFinished(_user, contracts);
+
+	stringstream ss;
+	ss << "--[" << GREENCOLOR << "Completed " << contracts.size() << CLEARCOLOR << "]------\r\n";
+
+	if(0 == contracts.size())
+	{
+		ss << "No existing contracts.\r\n";
+	}
+
+	for(vector<Contract*>::iterator contract = contracts.begin(); contract != contracts.end(); ++contract)
+	{
+		Contract* ptr = *contract;
+		ss << ptr->User1 << " (" << ptr->User1Profit << ") <-> (" << ptr->User2Profit << ") " << ptr->User2 << " -- " << ptr->Duration << " minutes\r\n";
+	}
+
+	Send(ss.str());
+}
+
 void Session::DoAccept(const string& message)
 {
 	string remainder;
@@ -497,6 +519,11 @@ void Session::CommandMessage( const string& message )
 		if("reject" == command)
 		{
 			DoReject(remainder);
+			return;
+		}
+		else if("results" == command)
+		{
+			DoResults();
 			return;
 		}
 		break;

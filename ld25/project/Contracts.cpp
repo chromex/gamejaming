@@ -48,6 +48,8 @@ Contracts::Contracts()
 				LJObject::iterator pending = obj.find("Pending");
 				LJObject::iterator startTime = obj.find("StartTime");
 				LJObject::iterator done = obj.find("Done");
+				LJObject::iterator user1profit = obj.find("User1Profit");
+				LJObject::iterator user2profit = obj.find("User2Profit");
 
 				if( obj.end() != user1 && user1->second.IsString() &&
 					obj.end() != user2 && user2->second.IsString() &&
@@ -55,7 +57,9 @@ Contracts::Contracts()
 					obj.end() != user2contrib && user2contrib->second.IsNumber() &&
 					obj.end() != duration && duration->second.IsNumber() &&
 					obj.end() != pending && pending->second.IsBoolean() &&
-					obj.end() != done && done->second.IsBoolean() )
+					obj.end() != done && done->second.IsBoolean() &&
+					obj.end() != user1profit && user1profit->second.IsNumber() &&
+					obj.end() != user2profit && user2profit->second.IsNumber() )
 				{
 					Contract* contract = new Contract;
 					contract->User1 = user1->second.string();
@@ -65,6 +69,8 @@ Contracts::Contracts()
 					contract->Duration = (size_t)duration->second.number();
 					contract->Pending = pending->second.boolean();
 					contract->Done = done->second.boolean();
+					contract->User1Profit = (size_t)user1profit->second.number();
+					contract->User2Profit = (size_t)user2profit->second.number();
 
 					if(obj.end() != startTime && startTime->second.IsString())
 					{
@@ -108,6 +114,8 @@ void Contracts::Save() const
 		entry["Duration"] = (double)(*cp)->Duration;
 		entry["Pending"] = (*cp)->Pending;
 		entry["Done"] = (*cp)->Done;
+		entry["User1Profit"] = (double)(*cp)->User1Profit;
+		entry["User2Profit"] = (double)(*cp)->User2Profit;
 		if(!(*cp)->Pending)
 			entry["StartTime"] = boost::posix_time::to_simple_string((*cp)->StartTime);
 		arr.push_back(entry);
@@ -413,4 +421,6 @@ Contract::Contract()
 	, Duration(0)
 	, Pending(true)
 	, Done(false)
+	, User1Profit(0)
+	, User2Profit(0)
 {}

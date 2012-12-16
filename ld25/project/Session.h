@@ -40,6 +40,7 @@ private:
 	void DoOffer(const string& message);
 	void DoOffers();
 	void DoContracts();
+	void DoResults();
 	void DoAccept(const string& message);
 	void DoReject(const string& message);
 
