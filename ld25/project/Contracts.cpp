@@ -404,6 +404,19 @@ void Contracts::AcceptOffer( Session* sender, const string& other, bool evil )
 	c->StartTime = boost::posix_time::second_clock::local_time();
 	c->Evil2 = evil;
 
+	if(!sender->GetUser()->Started)
+	{
+		sender->GetUser()->Started = true;
+		sender->GetUser()->StartTime = boost::posix_time::second_clock::local_time();
+		Log(sender->GetUser()->Username << "'s life has begun!");
+	}
+	if(!otherUser->Started)
+	{
+		otherUser->Started = true;
+		otherUser->StartTime = boost::posix_time::second_clock::local_time();
+		Log(otherUser->Username << "'s life has begun!");
+	}
+
 	if(evil)
 		sender->Send("Contract evilly accepted! May you live in infamy!\r\n");
 	else

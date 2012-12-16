@@ -14,6 +14,7 @@ Session::Session( boost::asio::io_service& service )
 	: _socket(service)
 	, _loginStage(0)
 	, _user(0)
+	, _authUser(0)
 	, _closing(false)
 	, _sending(false)
 	, _recving(false)
@@ -75,7 +76,22 @@ void Session::SendWelcome()
 void Session::SendPrompt()
 {
 	if(!_closing)
-		SendStream(GREENCOLOR << "> " << CLEARCOLOR);
+	{
+		if(0 != _user && _user->Started && !_user->Done)
+		{
+			boost::posix_time::time_duration td = boost::posix_time::second_clock::local_time() - _user->StartTime;
+			int minutes = 60 - td.minutes();
+			SendStream(REDCOLOR << minutes << "m remaining" << GREENCOLOR << "> " << CLEARCOLOR);
+		}
+		else if(0 != _user && _user->Done)
+		{
+			SendStream(REDCOLOR << "Times up" << GREENCOLOR << "> " << CLEARCOLOR)
+		}
+		else
+		{
+			SendStream(GREENCOLOR << "> " << CLEARCOLOR);
+		}
+	}
 }
 
 bool IsAlnum(const string& message)
@@ -97,8 +113,8 @@ void Session::LoginMessage( const string& message )
 		return;
 	case 1:
 		{
-			_user = Users::Instance()->GetUserByUsername(message);
-			if(0 == _user)
+			_authUser = Users::Instance()->GetUserByUsername(message);
+			if(0 == _authUser)
 			{
 				if(!IsAlnum(message))
 				{
@@ -168,8 +184,9 @@ void Session::LoginMessage( const string& message )
 		break;
 	case 10:
 		{
-			if(_user->Password == message)
+			if(_authUser->Password == message)
 			{
+				_user = _authUser;
 				SendStream(GREENCOLOR << "Authentication successful\r\n" << CLEARCOLOR);
 				if(_user->Admin)
 				{
@@ -182,6 +199,7 @@ void Session::LoginMessage( const string& message )
 			else
 			{
 				SendStream("Failed authentication!\r\nWhat is the username you have or would like to have?\r\n");
+				_authUser = 0;
 				_loginStage = 1;
 			}
 		}
@@ -229,6 +247,8 @@ void Session::DoWho()
 		User* up = *user;
 		if(up->Admin)
 			ss << "[Admin] ";
+		else if(up->Done)
+			ss << "[Dead] ";
 		ss << up->Username << " - $" << up->Money << " R" << up->Respect << " - " << up->About.substr(0,30) << "\r\n";
 	}
 	Send(ss.str());
@@ -341,7 +361,7 @@ void Session::DoHelp(const string& message)
 	else
 	{
 		SendStream("--[" << GREENCOLOR << "Help Topics" << CLEARCOLOR << "]------\r\n");
-		Send("Syntax: help <topic>\r\n[Topics]\r\n");
+		SendStream("Syntax: help <topic>\r\n\r\n[" << GREENCOLOR << "Topics" << CLEARCOLOR << "]\r\n");
 		Send("commands\r\ngame\r\nstory\r\ncontracts\r\n");
 	}
 }
@@ -356,6 +376,8 @@ void Session::DoLeaders()
 	ss << "--[" << GREENCOLOR << "Leaders" << CLEARCOLOR << "]------\r\n";
 	for(vector<User*>::const_iterator up = users.begin(); up != users.end(); ++up)
 	{
+		if((*up)->Done)
+			ss << "[Dead] ";
 		ss << pos << " - " << (*up)->Username << " $" << (*up)->Money << "\r\n";
 		++pos;
 	}
@@ -385,6 +407,8 @@ void Session::DoAbout( const string& message )
 	SendStream(user->About << "\r\n");
 	SendStream("Money: $" << user->Money << "\r\n");
 	SendStream("Respect: R" << user->Respect << "\r\n");
+	if(user->Done)
+		Send("The user is out of time\r\n");
 }
 
 void Session::DoTell( const string& message )
@@ -449,6 +473,12 @@ void Session::DoSave()
 
 void Session::DoOffer( const string& message )
 {
+	if(_user->Done)
+	{
+		Send("Sorry, your done and can no longer do that.\r\n");
+		return;
+	}
+
 	string remainder;
 	string myAmountStr = ExtractCommand(message, remainder);
 	string target = ExtractCommand(remainder, remainder);
@@ -478,6 +508,12 @@ void Session::DoOffer( const string& message )
 
 void Session::DoEvilOffer( const string& message )
 {
+	if(_user->Done)
+	{
+		Send("Sorry, your done and can no longer do that.\r\n");
+		return;
+	}
+
 	string remainder;
 	string myAmountStr = ExtractCommand(message, remainder);
 	string target = ExtractCommand(remainder, remainder);
@@ -575,6 +611,12 @@ void Session::DoResults()
 
 void Session::DoRate(const string& message)
 {
+	if(_user->Done)
+	{
+		Send("Sorry, your done and can no longer do that.\r\n");
+		return;
+	}
+
 	string remainder;
 	string idStr = ExtractCommand(message, remainder);
 	string user = ExtractCommand(remainder, remainder);
@@ -644,6 +686,12 @@ void Session::DoRate(const string& message)
 
 void Session::DoAccept(const string& message)
 {
+	if(_user->Done)
+	{
+		Send("Sorry, your done and can no longer do that.\r\n");
+		return;
+	}
+
 	string remainder;
 	string target = ExtractCommand(message, remainder);
 
@@ -658,6 +706,12 @@ void Session::DoAccept(const string& message)
 
 void Session::DoEvilAccept(const string& message)
 {
+	if(_user->Done)
+	{
+		Send("Sorry, your done and can no longer do that.\r\n");
+		return;
+	}
+
 	string remainder;
 	string target = ExtractCommand(message, remainder);
 
@@ -672,6 +726,12 @@ void Session::DoEvilAccept(const string& message)
 
 void Session::DoReject(const string& message)
 {
+	if(_user->Done)
+	{
+		Send("Sorry, your done and can no longer do that.\r\n");
+		return;
+	}
+
 	string remainder;
 	string target = ExtractCommand(message, remainder);
 

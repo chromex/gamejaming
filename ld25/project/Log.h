@@ -5,8 +5,10 @@
 #include <string>
 #include <iostream>
 
-#define Log(S) {std::stringstream ss; ss << "[Info] " << S << std::endl; std::cout << ss.str();}
-#define LogWarning(S) {std::stringstream ss; ss << "[Warning] " << S << std::endl; std::cout << ss.str();}
-#define LogError(S) {std::stringstream ss; ss << "[Error] " << S << std::endl; std::cout << ss.str();}
+#include <boost/date_time/posix_time/posix_time.hpp>
+
+#define Log(S) {std::stringstream ss; ss << "[Info] " << boost::posix_time::to_simple_string(boost::posix_time::second_clock::local_time()) << " " << S << std::endl; std::cout << ss.str();}
+#define LogWarning(S) {std::stringstream ss; ss << "[Warning] " << boost::posix_time::to_simple_string(boost::posix_time::second_clock::local_time()) << " " << S << std::endl; std::cout << ss.str();}
+#define LogError(S) {std::stringstream ss; ss << "[Error] " << boost::posix_time::to_simple_string(boost::posix_time::second_clock::local_time()) << " " << S << std::endl; std::cout << ss.str();}
 
 #endif

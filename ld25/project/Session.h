@@ -72,6 +72,7 @@ private:
 	string _authPassword;
 
 	User* _user;
+	User* _authUser;
 
 	// Dead session handling
 	bool _closing;

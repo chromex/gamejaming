@@ -3,6 +3,8 @@
 #include "Log.h"
 #include "Settings.h"
 #include "LawlJSON.h"
+#include "Session.h"
+#include "World.h"
 
 #include <algorithm>
 
@@ -45,11 +47,16 @@ Users::Users()
 				LJObject::iterator money = obj.find("Money");
 				LJObject::iterator about = obj.find("About");
 				LJObject::iterator respect = obj.find("Respect");
+				LJObject::iterator started = obj.find("Started");
+				LJObject::iterator done = obj.find("Done");
+				LJObject::iterator startTime = obj.find("StartTime");
 
 				if( obj.end() != username && username->second.IsString() &&
 					obj.end() != password && password->second.IsString() &&
 					obj.end() != money && money->second.IsNumber() &&
-					obj.end() != respect && respect->second.IsNumber())
+					obj.end() != respect && respect->second.IsNumber() &&
+					obj.end() != started && started->second.IsBoolean() &&
+					obj.end() != done && done->second.IsBoolean() )
 				{
 					if(0 != GetUserByUsername(username->second.string()))
 					{
@@ -62,6 +69,13 @@ Users::Users()
 					user->Password = password->second.string();
 					user->Money = (size_t)money->second.number();
 					user->Respect = (int)respect->second.number();
+					user->Started = started->second.boolean();
+					user->Done = done->second.boolean();
+
+					if(user->Started && (obj.end() != startTime) && startTime->second.IsString())
+					{
+						user->StartTime = boost::posix_time::time_from_string(startTime->second.string());
+					}
 
 					if(obj.end() != about && about->second.IsString())
 					{
@@ -104,6 +118,10 @@ void Users::Save() const
 		entry["Money"] = (double)((*up)->Money);
 		entry["Respect"] = (double)((*up)->Respect);
 		entry["Admin"] = (*up)->Admin;
+		entry["Started"] = (*up)->Started;
+		entry["Done"] = (*up)->Done;
+		if((*up)->Started)
+			entry["StartTime"] = boost::posix_time::to_simple_string((*up)->StartTime);
 		arr.push_back(entry);
 	}
 
@@ -195,10 +213,33 @@ void Users::ComputeLeaders( size_t nPositions )
 void Users::Tick()
 {
 	ComputeLeaders(Settings::numLeaders);
+
+	for(UserVec::iterator user = _users.begin(); user != _users.end(); ++user)
+	{
+		User* ptr = *user;
+		if(ptr->Started && !ptr->Done)
+		{
+			boost::posix_time::time_duration td = boost::posix_time::second_clock::local_time() - ptr->StartTime;
+
+			if(td.minutes() > 60)
+			{
+				ptr->Done = true;
+				Log(ptr->Username << "'s time is up");
+
+				Session* session = World::Instance()->GetSession(ptr->Username);
+				if(0 != session)
+				{
+					session->Send("Your time is up! I hope you did well...\r\n");
+				}
+			}
+		}
+	}
 }
 
 User::User()
 	: Money(0)
 	, Respect(0)
 	, Admin(false)
+	, Started(false)
+	, Done(false)
 {}

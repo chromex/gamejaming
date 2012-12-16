@@ -5,6 +5,8 @@
 #include <vector>
 using namespace std;
 
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 struct User
 {
 	User();
@@ -15,6 +17,9 @@ struct User
 	size_t Money;
 	int Respect;
 	bool Admin;
+	bool Started;
+	bool Done;
+	boost::posix_time::ptime StartTime;
 };
 
 class Users
