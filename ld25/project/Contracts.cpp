@@ -135,6 +135,19 @@ void Contracts::Save() const
 	Util::WriteFile("contracts.json", results.data(), results.length());
 }
 
+size_t Multiplier(size_t duration)
+{
+	size_t base = 1;
+
+	while(duration > 1)
+	{
+		base *= 2;
+		--duration;
+	}
+
+	return base;
+}
+
 void Contracts::Tick()
 {
 	boost::posix_time::ptime currentTime = boost::posix_time::second_clock::local_time();
@@ -154,8 +167,8 @@ void Contracts::Tick()
 
 			if(!ptr->Evil1 && !ptr->Evil2)
 			{
-				ptr->User1Profit = ptr->User1Contribution + ptr->Duration * avg;
-				ptr->User2Profit = ptr->User2Contribution + ptr->Duration * avg;
+				ptr->User1Profit = ptr->User1Contribution + Multiplier(ptr->Duration) * avg;
+				ptr->User2Profit = ptr->User2Contribution + Multiplier(ptr->Duration) * avg;
 			}
 			else if(ptr->Evil1 && ptr->Evil2)
 			{
@@ -164,13 +177,13 @@ void Contracts::Tick()
 			}
 			else if(ptr->Evil1)
 			{
-				ptr->User1Profit = ptr->User1Contribution + ptr->Duration * avg + ptr->User2Contribution + ptr->Duration * avg;
+				ptr->User1Profit = ptr->User1Contribution + Multiplier(ptr->Duration) * avg + ptr->User2Contribution + Multiplier(ptr->Duration) * avg;
 				ptr->User2Profit = 0;
 			}
 			else if(ptr->Evil2)
 			{
 				ptr->User1Profit = 0;
-				ptr->User2Profit = ptr->User1Contribution + ptr->Duration * avg + ptr->User2Contribution + ptr->Duration * avg;
+				ptr->User2Profit = ptr->User1Contribution + Multiplier(ptr->Duration) * avg + ptr->User2Contribution + Multiplier(ptr->Duration) * avg;
 			}
 
 			User* user1 = Users::Instance()->GetUserByUsername(ptr->User1);
