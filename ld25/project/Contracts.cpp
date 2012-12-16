@@ -46,13 +46,16 @@ Contracts::Contracts()
 				LJObject::iterator user2contrib = obj.find("User2Contribution");
 				LJObject::iterator duration = obj.find("Duration");
 				LJObject::iterator pending = obj.find("Pending");
+				LJObject::iterator startTime = obj.find("StartTime");
+				LJObject::iterator done = obj.find("Done");
 
 				if( obj.end() != user1 && user1->second.IsString() &&
 					obj.end() != user2 && user2->second.IsString() &&
 					obj.end() != user1contrib && user1contrib->second.IsNumber() &&
 					obj.end() != user2contrib && user2contrib->second.IsNumber() &&
 					obj.end() != duration && duration->second.IsNumber() &&
-					obj.end() != pending && pending->second.IsBoolean() )
+					obj.end() != pending && pending->second.IsBoolean() &&
+					obj.end() != done && done->second.IsBoolean() )
 				{
 					Contract* contract = new Contract;
 					contract->User1 = user1->second.string();
@@ -61,6 +64,13 @@ Contracts::Contracts()
 					contract->User2Contribution = (size_t)user2contrib->second.number();
 					contract->Duration = (size_t)duration->second.number();
 					contract->Pending = pending->second.boolean();
+					contract->Done = done->second.boolean();
+
+					if(obj.end() != startTime && startTime->second.IsString())
+					{
+						contract->StartTime = boost::posix_time::time_from_string(startTime->second.string());
+					}
+
 					_contracts.push_back(contract);
 				}
 			}
@@ -97,6 +107,9 @@ void Contracts::Save() const
 		entry["User2Contribution"] = (double)(*cp)->User2Contribution;
 		entry["Duration"] = (double)(*cp)->Duration;
 		entry["Pending"] = (*cp)->Pending;
+		entry["Done"] = (*cp)->Done;
+		if(!(*cp)->Pending)
+			entry["StartTime"] = boost::posix_time::to_simple_string((*cp)->StartTime);
 		arr.push_back(entry);
 	}
 
@@ -108,7 +121,54 @@ void Contracts::Save() const
 
 void Contracts::Tick()
 {
+	boost::posix_time::ptime currentTime = boost::posix_time::second_clock::local_time();
 
+	for(ContractVec::iterator contract = _contracts.begin(); contract != _contracts.end(); ++contract)
+	{
+		Contract* ptr = *contract;
+
+		if(ptr->Pending || ptr->Done)
+			continue;
+
+		if(currentTime > (ptr->StartTime + boost::posix_time::minutes(ptr->Duration)))
+		{
+			ptr->Done = true;
+
+			size_t avg = (ptr->User1Contribution + ptr->User2Contribution) / 2;
+			ptr->User1Profit = ptr->User1Contribution + ptr->Duration * avg;
+			ptr->User2Profit = ptr->User2Contribution + ptr->Duration * avg;
+
+			User* user1 = Users::Instance()->GetUserByUsername(ptr->User1);
+			User* user2 = Users::Instance()->GetUserByUsername(ptr->User2);
+
+			if(0 == user1)
+				LogError("'" << ptr->User1 << "' for contract could not be found!")
+			else
+				user1->Money += ptr->User1Profit;
+
+			if(0 == user2)
+				LogError("'" << ptr->User2 << "' for contract could not be found!")
+			else
+				user2->Money += ptr->User2Profit;
+
+			Session* session1 = World::Instance()->GetSession(ptr->User1);
+			Session* session2 = World::Instance()->GetSession(ptr->User2);
+
+			if(0 != session1)
+			{
+				stringstream ss;
+				ss << "You made $" << ptr->User1Profit - ptr->User1Contribution << " from your contract with '" << ptr->User2 << "'!\r\n";
+				session1->Send(ss.str());
+			}
+
+			if(0 != session2)
+			{
+				stringstream ss;
+				ss << "You made $" << ptr->User2Profit - ptr->User2Contribution  << " from your contract with '" << ptr->User1 << "'!\r\n";
+				session2->Send(ss.str());
+			}
+		}
+	}
 }
 
 Contract* Contracts::CreateContract( Session* sender, int myAmount, const string& other, int theirAmount, int time )
@@ -166,7 +226,8 @@ bool Contracts::ContractExists( User* user1, User* user2 ) const
 		if( (user1->Username == ptr->User1 && user2->Username == ptr->User2) ||
 			(user1->Username == ptr->User2 && user2->Username == ptr->User1) )
 		{
-			return true;
+			if(!ptr->Done)
+				return true;
 		}
 	}
 
@@ -186,8 +247,17 @@ void Contracts::GetContracts( User* user, vector<Contract*>& contracts )
 {
 	for(ContractVec::const_iterator contract = _contracts.begin(); contract != _contracts.end(); ++contract)
 	{
-		if(((*contract)->User1 == user->Username || (*contract)->User2 == user->Username) && !(*contract)->Pending)
+		if(((*contract)->User1 == user->Username || (*contract)->User2 == user->Username) && !(*contract)->Pending && !(*contract)->Done)
 			contracts.push_back(*contract);
+	}
+}
+
+void Contracts::GetFinished( User* user, vector<Contract*>& finished )
+{
+	for(ContractVec::const_iterator contract = _contracts.begin(); contract != _contracts.end(); ++contract)
+	{
+		if(((*contract)->User1 == user->Username || (*contract)->User2 == user->Username) && !(*contract)->Pending && (*contract)->Done)
+			finished.push_back(*contract);
 	}
 }
 
@@ -267,6 +337,7 @@ void Contracts::AcceptOffer( Session* sender, const string& other )
 	sender->GetUser()->Money -= c->User2Contribution;
 	otherUser->Money -= c->User1Contribution;
 	c->Pending = false;
+	c->StartTime = boost::posix_time::second_clock::local_time();
 
 	sender->Send("Contract accepted!\r\n");
 	
@@ -341,4 +412,5 @@ Contract::Contract()
 	, User2Contribution(0)
 	, Duration(0)
 	, Pending(true)
+	, Done(false)
 {}

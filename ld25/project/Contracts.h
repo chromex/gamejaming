@@ -5,6 +5,8 @@
 #include <vector>
 using namespace std;
 
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 class Session;
 struct User;
 
@@ -18,6 +20,10 @@ struct Contract
 	size_t User2Contribution;
 	size_t Duration;
 	bool Pending;
+	bool Done;
+	boost::posix_time::ptime StartTime;
+	size_t User1Profit;
+	size_t User2Profit;
 };
 
 class Contracts
@@ -31,6 +37,7 @@ public:
 	Contract* CreateContract(Session* sender, int myAmount, const string& other, int theirAmount, int time);
 	void GetOffers(User* user, vector<Contract*>& offers);
 	void GetContracts(User* user, vector<Contract*>& contracts);
+	void GetFinished(User* user, vector<Contract*>& finished);
 	void AcceptOffer(Session* sender, const string& other);
 	void RejectOffer(Session* sender, const string& other);
 
