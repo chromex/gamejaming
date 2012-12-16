@@ -50,6 +50,8 @@ Contracts::Contracts()
 				LJObject::iterator done = obj.find("Done");
 				LJObject::iterator user1profit = obj.find("User1Profit");
 				LJObject::iterator user2profit = obj.find("User2Profit");
+				LJObject::iterator evil1 = obj.find("Evil1");
+				LJObject::iterator evil2 = obj.find("Evil2");
 
 				if( obj.end() != user1 && user1->second.IsString() &&
 					obj.end() != user2 && user2->second.IsString() &&
@@ -59,7 +61,9 @@ Contracts::Contracts()
 					obj.end() != pending && pending->second.IsBoolean() &&
 					obj.end() != done && done->second.IsBoolean() &&
 					obj.end() != user1profit && user1profit->second.IsNumber() &&
-					obj.end() != user2profit && user2profit->second.IsNumber() )
+					obj.end() != user2profit && user2profit->second.IsNumber() &&
+					obj.end() != evil1 && evil1->second.IsBoolean() &&
+					obj.end() != evil2 && evil2->second.IsBoolean() )
 				{
 					Contract* contract = new Contract;
 					contract->User1 = user1->second.string();
@@ -71,6 +75,8 @@ Contracts::Contracts()
 					contract->Done = done->second.boolean();
 					contract->User1Profit = (size_t)user1profit->second.number();
 					contract->User2Profit = (size_t)user2profit->second.number();
+					contract->Evil1 = evil1->second.boolean();
+					contract->Evil2 = evil2->second.boolean();
 
 					if(obj.end() != startTime && startTime->second.IsString())
 					{
@@ -116,6 +122,8 @@ void Contracts::Save() const
 		entry["Done"] = (*cp)->Done;
 		entry["User1Profit"] = (double)(*cp)->User1Profit;
 		entry["User2Profit"] = (double)(*cp)->User2Profit;
+		entry["Evil1"] = (*cp)->Evil1;
+		entry["Evil2"] = (*cp)->Evil2;
 		if(!(*cp)->Pending)
 			entry["StartTime"] = boost::posix_time::to_simple_string((*cp)->StartTime);
 		arr.push_back(entry);
@@ -143,8 +151,27 @@ void Contracts::Tick()
 			ptr->Done = true;
 
 			size_t avg = (ptr->User1Contribution + ptr->User2Contribution) / 2;
-			ptr->User1Profit = ptr->User1Contribution + ptr->Duration * avg;
-			ptr->User2Profit = ptr->User2Contribution + ptr->Duration * avg;
+
+			if(!ptr->Evil1 && !ptr->Evil2)
+			{
+				ptr->User1Profit = ptr->User1Contribution + ptr->Duration * avg;
+				ptr->User2Profit = ptr->User2Contribution + ptr->Duration * avg;
+			}
+			else if(ptr->Evil1 && ptr->Evil2)
+			{
+				ptr->User1Profit = 0;
+				ptr->User2Profit = 0;
+			}
+			else if(ptr->Evil1)
+			{
+				ptr->User1Profit = ptr->User1Contribution + ptr->Duration * avg + ptr->User2Contribution + ptr->Duration * avg;
+				ptr->User2Profit = 0;
+			}
+			else if(ptr->Evil2)
+			{
+				ptr->User1Profit = 0;
+				ptr->User2Profit = ptr->User1Contribution + ptr->Duration * avg + ptr->User2Contribution + ptr->Duration * avg;
+			}
 
 			User* user1 = Users::Instance()->GetUserByUsername(ptr->User1);
 			User* user2 = Users::Instance()->GetUserByUsername(ptr->User2);
@@ -165,21 +192,21 @@ void Contracts::Tick()
 			if(0 != session1)
 			{
 				stringstream ss;
-				ss << "You made $" << ptr->User1Profit - ptr->User1Contribution << " from your contract with '" << ptr->User2 << "'!\r\n";
+				ss << "You made $" << ptr->User1Profit << " from your contract with '" << ptr->User2 << "'!\r\n";
 				session1->Send(ss.str());
 			}
 
 			if(0 != session2)
 			{
 				stringstream ss;
-				ss << "You made $" << ptr->User2Profit - ptr->User2Contribution  << " from your contract with '" << ptr->User1 << "'!\r\n";
+				ss << "You made $" << ptr->User2Profit << " from your contract with '" << ptr->User1 << "'!\r\n";
 				session2->Send(ss.str());
 			}
 		}
 	}
 }
 
-Contract* Contracts::CreateContract( Session* sender, int myAmount, const string& other, int theirAmount, int time )
+Contract* Contracts::CreateContract( Session* sender, int myAmount, const string& other, int theirAmount, int time, bool evil )
 {
 	User* otherUser = Users::Instance()->GetUserByUsername(other);
 	if(0 == otherUser)
@@ -210,6 +237,7 @@ Contract* Contracts::CreateContract( Session* sender, int myAmount, const string
 	contract->User1Contribution = myAmount;
 	contract->User2Contribution = theirAmount;
 	contract->Duration = time;
+	contract->Evil1 = evil;
 	_contracts.push_back(contract);
 
 	sender->Send("Offer sent\r\n");
@@ -269,7 +297,7 @@ void Contracts::GetFinished( User* user, vector<Contract*>& finished )
 	}
 }
 
-void Contracts::AcceptOffer( Session* sender, const string& other )
+void Contracts::AcceptOffer( Session* sender, const string& other, bool evil )
 {
 	ContractVec offers;
 	GetOffers(sender->GetUser(), offers);
@@ -346,6 +374,7 @@ void Contracts::AcceptOffer( Session* sender, const string& other )
 	otherUser->Money -= c->User1Contribution;
 	c->Pending = false;
 	c->StartTime = boost::posix_time::second_clock::local_time();
+	c->Evil2 = evil;
 
 	sender->Send("Contract accepted!\r\n");
 	
@@ -423,4 +452,6 @@ Contract::Contract()
 	, Done(false)
 	, User1Profit(0)
 	, User2Profit(0)
+	, Evil1(false)
+	, Evil2(false)
 {}

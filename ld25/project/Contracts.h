@@ -24,6 +24,8 @@ struct Contract
 	boost::posix_time::ptime StartTime;
 	size_t User1Profit;
 	size_t User2Profit;
+	bool Evil1;
+	bool Evil2;
 };
 
 class Contracts
@@ -34,11 +36,11 @@ public:
 
 	static Contracts* Instance();
 
-	Contract* CreateContract(Session* sender, int myAmount, const string& other, int theirAmount, int time);
+	Contract* CreateContract(Session* sender, int myAmount, const string& other, int theirAmount, int time, bool evil);
 	void GetOffers(User* user, vector<Contract*>& offers);
 	void GetContracts(User* user, vector<Contract*>& contracts);
 	void GetFinished(User* user, vector<Contract*>& finished);
-	void AcceptOffer(Session* sender, const string& other);
+	void AcceptOffer(Session* sender, const string& other, bool evil);
 	void RejectOffer(Session* sender, const string& other);
 
 	void Save() const;

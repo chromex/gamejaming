@@ -329,7 +329,36 @@ void Session::DoOffer( const string& message )
 
 	time = min(Settings::maxDuration, time);
 
-	Contracts::Instance()->CreateContract(this, myAmount, target, theirAmount, time);
+	Contracts::Instance()->CreateContract(this, myAmount, target, theirAmount, time, false);
+}
+
+void Session::DoEvilOffer( const string& message )
+{
+	string remainder;
+	string myAmountStr = ExtractCommand(message, remainder);
+	string target = ExtractCommand(remainder, remainder);
+	string theirAmountStr = ExtractCommand(remainder, remainder);
+	string timeStr = ExtractCommand(remainder, remainder);
+
+	if(0 == myAmountStr.length() || 0 == target.length() || 0 == theirAmountStr.length() || 0 == timeStr.length())
+	{
+		Send("Syntax: eviloffer <my amount> <target user> <their amount> <minutes>\r\n");
+		return;
+	}
+
+	int myAmount = atoi(myAmountStr.c_str());
+	int theirAmount = atoi(theirAmountStr.c_str());
+	int time = atoi(timeStr.c_str());
+
+	if(0 >= myAmount || 0 >= theirAmount || 0 >= time)
+	{
+		Send("Syntax: eviloffer <my amount> <target user> <their amount> <minutes>\r\n");
+		return;
+	}
+
+	time = min(Settings::maxDuration, time);
+
+	Contracts::Instance()->CreateContract(this, myAmount, target, theirAmount, time, true);
 }
 
 void Session::DoOffers()
@@ -386,13 +415,13 @@ void Session::DoResults()
 
 	if(0 == contracts.size())
 	{
-		ss << "No existing contracts.\r\n";
+		ss << "No completed contracts.\r\n";
 	}
 
 	for(vector<Contract*>::iterator contract = contracts.begin(); contract != contracts.end(); ++contract)
 	{
 		Contract* ptr = *contract;
-		ss << ptr->User1 << " (" << ptr->User1Profit << ") <-> (" << ptr->User2Profit << ") " << ptr->User2 << " -- " << ptr->Duration << " minutes\r\n";
+		ss << ptr->User1 << " (" << ptr->User1Profit << " - " << ptr->User1Contribution << ") <-> (" << ptr->User2Profit << " - " << ptr->User2Contribution << ") " << ptr->User2 << "\r\n";
 	}
 
 	Send(ss.str());
@@ -409,7 +438,21 @@ void Session::DoAccept(const string& message)
 		return;
 	}
 
-	Contracts::Instance()->AcceptOffer(this, target);
+	Contracts::Instance()->AcceptOffer(this, target, false);
+}
+
+void Session::DoEvilAccept(const string& message)
+{
+	string remainder;
+	string target = ExtractCommand(message, remainder);
+
+	if(0 == target.length())
+	{
+		Send("Syntax: evilaccept <user>\r\n");
+		return;
+	}
+
+	Contracts::Instance()->AcceptOffer(this, target, true);
 }
 
 void Session::DoReject(const string& message)
@@ -463,6 +506,16 @@ void Session::CommandMessage( const string& message )
 	case 'd':
 		break;
 	case 'e':
+		if("evilaccept" == command)
+		{
+			DoEvilAccept(remainder);
+			return;
+		}
+		else if("eviloffer" == command)
+		{
+			DoEvilOffer(remainder);
+			return;
+		}
 		break;
 	case 'f':
 		break;

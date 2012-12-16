@@ -38,10 +38,12 @@ private:
 	void DoTell(const string& message);
 	void DoLeaders();
 	void DoOffer(const string& message);
+	void DoEvilOffer(const string& message);
 	void DoOffers();
 	void DoContracts();
 	void DoResults();
 	void DoAccept(const string& message);
+	void DoEvilAccept(const string& message);
 	void DoReject(const string& message);
 
 	// Auth/create
