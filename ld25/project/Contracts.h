@@ -26,6 +26,8 @@ struct Contract
 	size_t User2Profit;
 	bool Evil1;
 	bool Evil2;
+	bool Rated1;
+	bool Rated2;
 };
 
 class Contracts

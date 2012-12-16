@@ -56,7 +56,17 @@ void Session::Stop()
 
 void Session::SendWelcome()
 {
-	SendStream(REDCOLOR << "Connected to EndNet, a LD25 product\r\n" << CLEARCOLOR);
+	Send("\r\n\
+        :::        :::::::::    ::::::::   :::::::::: \r\n\
+       :+:        :+:    :+:  :+:    :+:  :+:    :+:  \r\n\
+      +:+        +:+    +:+        +:+   +:+          \r\n\
+     +#+        +#+    +:+      +#+     +#++:++#+     \r\n\
+    +#+        +#+    +#+    +#+              +#+     \r\n\
+   #+#        #+#    #+#   #+#        #+#    #+#      \r\n\
+  ########## #########   ##########   ########        \r\n\
+	\r\n");
+
+	SendStream(REDCOLOR << "Connected to EndNet, a LD25 entry\r\n" << CLEARCOLOR);
 	Send("What is the username you have or would like to have?\r\n");
 	SendPrompt();
 	_loginStage = 1;
@@ -66,6 +76,16 @@ void Session::SendPrompt()
 {
 	if(!_closing)
 		SendStream(GREENCOLOR << "> " << CLEARCOLOR);
+}
+
+bool IsAlnum(const string& message)
+{
+	for(size_t idx = 0; idx < message.length(); ++idx)
+	{
+		if(!isalnum(message[idx]))
+			return false;
+	}
+	return true;
 }
 
 void Session::LoginMessage( const string& message )
@@ -80,7 +100,11 @@ void Session::LoginMessage( const string& message )
 			_user = Users::Instance()->GetUserByUsername(message);
 			if(0 == _user)
 			{
-				if(message.length() < 33)
+				if(!IsAlnum(message))
+				{
+					Send("Username can only contain letters and numbers. Try again!\r\n");
+				}
+				else if(message.length() < 33)
 				{
 					SendStream("Creating new user '" << message << "'\r\n");
 					Send("What would you like for your password?\r\nKnow that telnet is not secure so don't use your normal password!\r\n");
@@ -275,13 +299,24 @@ void Session::DoTell( const string& message )
 	stringstream ss;
 	ss << _user->Username << " whispers: " << remainder << "\r\n";
 	session->Send(ss.str());
+
+	Log(_user->Username << " whispers to " << session->GetUser()->Username << ": " << remainder);
 }
 
 void Session::DoSay( const string& message )
 {
-	stringstream ss;
-	ss << "<" << _user->Username << "> " << message << "\r\n";
-	World::Instance()->Broadcast(ss.str());
+	if(message.length() > 0)
+	{
+		stringstream ss;
+		ss << "<" << _user->Username << "> " << message << "\r\n";
+		World::Instance()->Broadcast(ss.str());
+
+		Log(_user->Username << " says: " << message);
+	}
+	else
+	{
+		Send("Syntax: say <message>\r\n");
+	}
 }
 
 void Session::DoSetAbout( const string& message )
@@ -377,7 +412,7 @@ void Session::DoOffers()
 	for(vector<Contract*>::iterator offer = offers.begin(); offer != offers.end(); ++offer)
 	{
 		Contract* ptr = *offer;
-		ss << ptr->User1 << " (" << ptr->User1Contribution << ") <-> (" << ptr->User2Contribution << ") " << ptr->User2 << " -- " << ptr->Duration << " minutes\r\n";
+		ss << ptr->User1 << " (" << ptr->User1Contribution << ") <-> (" << ptr->User2Contribution << ") " << ptr->User2 << " -- " << ptr->Duration << " minute(s)\r\n";
 	}
 
 	Send(ss.str());
@@ -399,7 +434,7 @@ void Session::DoContracts()
 	for(vector<Contract*>::iterator contract = contracts.begin(); contract != contracts.end(); ++contract)
 	{
 		Contract* ptr = *contract;
-		ss << ptr->User1 << " (" << ptr->User1Contribution << ") <-> (" << ptr->User2Contribution << ") " << ptr->User2 << " -- " << ptr->Duration << " minutes\r\n";
+		ss << ptr->User1 << " (" << ptr->User1Contribution << ") <-> (" << ptr->User2Contribution << ") " << ptr->User2 << " -- " << ptr->Duration << " minute(s)\r\n";
 	}
 
 	Send(ss.str());
@@ -418,13 +453,84 @@ void Session::DoResults()
 		ss << "No completed contracts.\r\n";
 	}
 
+	int index = 1;
 	for(vector<Contract*>::iterator contract = contracts.begin(); contract != contracts.end(); ++contract)
 	{
 		Contract* ptr = *contract;
-		ss << ptr->User1 << " (" << ptr->User1Profit << " - " << ptr->User1Contribution << ") <-> (" << ptr->User2Profit << " - " << ptr->User2Contribution << ") " << ptr->User2 << "\r\n";
+		ss << "id " << index << " ] " << ptr->User1 << " (" << ptr->User1Profit << " - " << ptr->User1Contribution << ") <-> (" << ptr->User2Profit << " - " << ptr->User2Contribution << ") " << ptr->User2 << "\r\n";
+		++index;
 	}
 
 	Send(ss.str());
+}
+
+void Session::DoRate(const string& message)
+{
+	string remainder;
+	string idStr = ExtractCommand(message, remainder);
+	string user = ExtractCommand(remainder, remainder);
+	string ratingStr = ExtractCommand(remainder, remainder);
+
+	if(0 == idStr.length() || 0 == user.length() || 0 == ratingStr.length())
+	{
+		Send("Syntax: rate <id> <user> <rating>\r\n");
+		return;
+	}
+
+	User* otherUser = Users::Instance()->GetUserByUsername(user);
+	if(0 == otherUser)
+	{
+		SendStream("No such user '" << user << "' to rate.\r\n");
+		return;
+	}
+
+	if(otherUser == _user)
+	{
+		Send("Can't rate yourself, jackass.\r\n");
+		return;
+	}
+
+	int id = atoi(idStr.c_str()) - 1;
+	int rating = atoi(ratingStr.c_str());
+
+	if(rating < -3 || rating > 3)
+	{
+		Send("Ratings must fall in the range of -3 to 3, inclusive.\r\n");
+		return;
+	}
+
+	vector<Contract*> contracts;
+	Contracts::Instance()->GetFinished(_user, contracts);
+
+	if(id < 0 || id >= (int)contracts.size())
+	{
+		Send("Bad contract ID. Grab the ID from the 'results' command.\r\n");
+		return;
+	}
+
+	Contract* c = contracts[id];
+	if(otherUser->Username != c->User1 && otherUser->Username != c->User2)
+	{
+		Send("Specified username is not on the contract, try again?\r\n");
+		return;
+	}
+
+	if(((_user->Username == c->User1) && c->Rated1) || ((_user->Username == c->User2) && c->Rated2))
+	{
+		Send("I can't let you do that, you have already rated that contract interaction.\r\n");
+		return;
+	}
+
+	otherUser->Respect += rating;
+
+	if(_user->Username == c->User1)
+		c->Rated1 = true;
+	else if(_user->Username == c->User2)
+		c->Rated2 = true;
+
+	Log(_user->Username << " rated " << otherUser->Username << " with a " << rating << " rating");
+
+	SendStream("You rated '" << otherUser->Username << "' with a " << rating << " rating on contract id " << id+1 << ".\r\n");
 }
 
 void Session::DoAccept(const string& message)
@@ -568,7 +674,6 @@ void Session::CommandMessage( const string& message )
 		}
 		break;
 	case 'r':
-		// Rate user +/-
 		if("reject" == command)
 		{
 			DoReject(remainder);
@@ -577,6 +682,11 @@ void Session::CommandMessage( const string& message )
 		else if("results" == command)
 		{
 			DoResults();
+			return;
+		}
+		else if("rate" == command)
+		{
+			DoRate(remainder);
 			return;
 		}
 		break;

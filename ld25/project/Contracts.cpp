@@ -52,6 +52,8 @@ Contracts::Contracts()
 				LJObject::iterator user2profit = obj.find("User2Profit");
 				LJObject::iterator evil1 = obj.find("Evil1");
 				LJObject::iterator evil2 = obj.find("Evil2");
+				LJObject::iterator rated1 = obj.find("Rated1");
+				LJObject::iterator rated2 = obj.find("Rated2");
 
 				if( obj.end() != user1 && user1->second.IsString() &&
 					obj.end() != user2 && user2->second.IsString() &&
@@ -63,7 +65,9 @@ Contracts::Contracts()
 					obj.end() != user1profit && user1profit->second.IsNumber() &&
 					obj.end() != user2profit && user2profit->second.IsNumber() &&
 					obj.end() != evil1 && evil1->second.IsBoolean() &&
-					obj.end() != evil2 && evil2->second.IsBoolean() )
+					obj.end() != evil2 && evil2->second.IsBoolean() &&
+					obj.end() != rated1 && rated1->second.IsBoolean() &&
+					obj.end() != rated2 && rated2->second.IsBoolean() )
 				{
 					Contract* contract = new Contract;
 					contract->User1 = user1->second.string();
@@ -77,6 +81,8 @@ Contracts::Contracts()
 					contract->User2Profit = (size_t)user2profit->second.number();
 					contract->Evil1 = evil1->second.boolean();
 					contract->Evil2 = evil2->second.boolean();
+					contract->Rated1 = rated1->second.boolean();
+					contract->Rated2 = rated2->second.boolean();
 
 					if(obj.end() != startTime && startTime->second.IsString())
 					{
@@ -124,6 +130,8 @@ void Contracts::Save() const
 		entry["User2Profit"] = (double)(*cp)->User2Profit;
 		entry["Evil1"] = (*cp)->Evil1;
 		entry["Evil2"] = (*cp)->Evil2;
+		entry["Rated1"] = (*cp)->Rated1;
+		entry["Rated2"] = (*cp)->Rated2;
 		if(!(*cp)->Pending)
 			entry["StartTime"] = boost::posix_time::to_simple_string((*cp)->StartTime);
 		arr.push_back(entry);
@@ -202,6 +210,8 @@ void Contracts::Tick()
 			Session* session1 = World::Instance()->GetSession(ptr->User1);
 			Session* session2 = World::Instance()->GetSession(ptr->User2);
 
+			Log("A contracted completed between " << ptr->User1 << " and " << ptr->User2 << " with " << ptr->User1Profit << " and " << ptr->User2Profit << " profit numbers");
+
 			if(0 != session1)
 			{
 				stringstream ss;
@@ -253,7 +263,12 @@ Contract* Contracts::CreateContract( Session* sender, int myAmount, const string
 	contract->Evil1 = evil;
 	_contracts.push_back(contract);
 
-	sender->Send("Offer sent\r\n");
+	if(evil)
+		sender->Send("Offer sent, you evil bastard!\r\n");
+	else
+		sender->Send("Offer sent.\r\n");
+
+	Log("Contract created between " << contract->User1 << " and " << contract->User2 << " with " << contract->User1Contribution << " and " << contract->User2Contribution << " contributions and evil: " << evil);
 
 	Session* otherSession = World::Instance()->GetSession(other);
 	if(0 != otherSession)
@@ -389,7 +404,12 @@ void Contracts::AcceptOffer( Session* sender, const string& other, bool evil )
 	c->StartTime = boost::posix_time::second_clock::local_time();
 	c->Evil2 = evil;
 
-	sender->Send("Contract accepted!\r\n");
+	if(evil)
+		sender->Send("Contract evilly accepted! May you live in infamy!\r\n");
+	else
+		sender->Send("Contract accepted!\r\n");
+
+	Log(sender->GetUser()->Username << " accepted " << otherUser->Username << "'s offer with evil: " << evil);
 	
 	Session* otherSession = World::Instance()->GetSession(otherUser->Username);
 	if(0 != otherSession)
@@ -444,6 +464,8 @@ void Contracts::RejectOffer( Session* sender, const string& other )
 
 	sender->Send("Offer rejected.\r\n");
 
+	Log(sender->GetUser()->Username << " rejected " << otherUser->Username << "'s offer");
+
 	Session* otherSession = World::Instance()->GetSession(otherUser->Username);
 	if(0 != otherSession)
 	{
@@ -467,4 +489,6 @@ Contract::Contract()
 	, User2Profit(0)
 	, Evil1(false)
 	, Evil2(false)
+	, Rated1(false)
+	, Rated2(false)
 {}

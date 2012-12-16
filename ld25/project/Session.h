@@ -45,6 +45,7 @@ private:
 	void DoAccept(const string& message);
 	void DoEvilAccept(const string& message);
 	void DoReject(const string& message);
+	void DoRate(const string& message);
 
 	// Auth/create
 	void SendWelcome();

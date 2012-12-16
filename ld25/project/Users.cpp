@@ -61,7 +61,7 @@ Users::Users()
 					user->Username = username->second.string();
 					user->Password = password->second.string();
 					user->Money = (size_t)money->second.number();
-					user->Respect = (size_t)respect->second.number();
+					user->Respect = (int)respect->second.number();
 
 					if(obj.end() != about && about->second.IsString())
 					{
@@ -146,8 +146,8 @@ User* Users::CreateUser( const string& uname, const string& password )
 	User* user = new User;
 	user->Username = uname;
 	user->Password = password;
-	user->Money = 2000;
-	user->Respect = 100;
+	user->Money = Settings::startingMoney;
+	user->Respect = Settings::startingRespect;
 	user->About = "No about message set";
 	user->Admin = _users.size() == 0;
 	_users.push_back(user);

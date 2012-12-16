@@ -10,19 +10,8 @@ public:
 	static const int numLeaders = 10;
 	static const int maxContracts = 5;
 	static const int maxDuration = 5;
-
-	/*
-	static const char* title =
-"\
-      :::        :::::::::    ::::::::   :::::::::: \r\n\
-     :+:        :+:    :+:  :+:    :+:  :+:    :+:  \r\n\
-    +:+        +:+    +:+        +:+   +:+          \r\n\
-   +#+        +#+    +:+      +#+     +#++:++#+     \r\n\
-  +#+        +#+    +#+    +#+              +#+     \r\n\
- #+#        #+#    #+#   #+#        #+#    #+#      \r\n\
-########## #########   ##########   ########        \
-";
-";*/
+	static const int startingMoney = 2000;
+	static const int startingRespect = 10;
 };
 
 #endif

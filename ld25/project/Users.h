@@ -13,7 +13,7 @@ struct User
 	string Password;
 	string About;
 	size_t Money;
-	size_t Respect;
+	int Respect;
 	bool Admin;
 };
 
