@@ -336,18 +336,24 @@ void Contracts::AcceptOffer( Session* sender, const string& other, bool evil )
 		return;
 	}
 
+	User* otherUser = Users::Instance()->GetUserByUsername(other);
+	if(0 == otherUser)
+	{
+		sender->Send("No such user to accept an offer from.\r\n");
+		return;
+	}
+
+	if(otherUser == sender->GetUser())
+	{
+		sender->Send("Can't accept offers with yourself!\r\n");
+		return;
+	}
+
 	ContractVec contracts;
 	GetContracts(sender->GetUser(), contracts);
 	if(contracts.size() >= Settings::maxContracts)
 	{
 		sender->Send("You cannot accept new contracts until some of your existing ones expire.\r\n");
-		return;
-	}
-
-	User* otherUser = Users::Instance()->GetUserByUsername(other);
-	if(0 == otherUser)
-	{
-		sender->Send("No such user to accept an offer from.\r\n");
 		return;
 	}
 

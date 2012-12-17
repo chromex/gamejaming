@@ -85,7 +85,7 @@ void Session::SendPrompt()
 		}
 		else if(0 != _user && _user->Done)
 		{
-			SendStream(REDCOLOR << "Times up" << GREENCOLOR << "> " << CLEARCOLOR)
+			SendStream(REDCOLOR << "Time's up" << GREENCOLOR << "> " << CLEARCOLOR)
 		}
 		else
 		{
