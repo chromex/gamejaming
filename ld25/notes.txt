@@ -1,3 +1,16 @@
+== Post Release Todo ==
+
+ - Improve definition of payout multiplier in help doc
+ - Support streamed input from netcat
+ - Support ban for admin
+ - Tick time in contracts
+ - Format money numbers
+ - Change Who and Leaders to show Done or something other than dead
+ - Bug report command
+ - Prevent new offers against the dead
+ - Time's up, not Times up
+ - accepted an offer he made, not normalized name
+
 == Todo ==
 
 Server
