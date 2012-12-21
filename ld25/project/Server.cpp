@@ -4,6 +4,8 @@
 #include "Contracts.h"
 #include "Settings.h"
 
+#include <boost/bind.hpp>
+
 Server::Server( int port )
 	: _acceptor(_service, tcp::endpoint(tcp::v4(), port))
 	, _timer(_service, boost::posix_time::seconds(Settings::saveTicks))

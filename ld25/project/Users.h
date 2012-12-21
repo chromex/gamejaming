@@ -3,27 +3,29 @@
 
 #include <string>
 #include <vector>
-using namespace std;
 
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include "Time.h"
 
 struct User
 {
 	User();
+	~User();
 
-	string Username;
-	string Password;
-	string About;
+	std::string Username;
+	std::string Password;
+	std::string About;
 	size_t Money;
 	int Respect;
 	bool Admin;
 	bool Started;
 	bool Done;
-	boost::posix_time::ptime StartTime;
+	Time* StartTime;
 };
 
 class Users
 {
+	typedef std::vector<User*> UserVec;
+
 public:
 	Users();
 	~Users();
@@ -33,14 +35,13 @@ public:
 	void Save() const;
 	void Tick();
 
-	User* GetUserByUsername(string uname);
-	User* CreateUser(const string& uname, const string& password);
-	const vector<User*>& GetLeaders();
+	User* GetUserByUsername(std::string uname);
+	User* CreateUser(const std::string& uname, const std::string& password);
+	const UserVec& GetLeaders();
 
 private:
 	void ComputeLeaders(size_t nPositions);
 
-	typedef vector<User*> UserVec;
 	UserVec _users;
 	UserVec _leaders;
 };

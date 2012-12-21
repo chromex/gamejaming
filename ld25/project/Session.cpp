@@ -1,14 +1,15 @@
 #include "Session.h"
 #include "Log.h"
 #include "Settings.h"
-#include "Users.h"
 #include "Colors.h"
 #include "World.h"
 #include "Contracts.h"
 
+#include <boost/bind.hpp>
+
 #include <istream>
 
-#define SendStream(S) {stringstream ss; ss << S; Send(ss.str());}
+#define SendStream(S) {std::stringstream ss; ss << S; Send(ss.str());}
 
 Session::Session( boost::asio::io_service& service )
 	: _socket(service)
@@ -79,8 +80,7 @@ void Session::SendPrompt()
 	{
 		if(0 != _user && _user->Started && !_user->Done)
 		{
-			boost::posix_time::time_duration td = boost::posix_time::second_clock::local_time() - _user->StartTime;
-			int minutes = 60 - td.minutes();
+			int minutes = 60 - _user->StartTime->MinutesFromLocal();
 			SendStream(REDCOLOR << minutes << "m remaining" << GREENCOLOR << "> " << CLEARCOLOR);
 		}
 		else if(0 != _user && _user->Done)
@@ -94,7 +94,7 @@ void Session::SendPrompt()
 	}
 }
 
-bool IsAlnum(const string& message)
+bool IsAlnum(const std::string& message)
 {
 	for(size_t idx = 0; idx < message.length(); ++idx)
 	{
@@ -104,7 +104,7 @@ bool IsAlnum(const string& message)
 	return true;
 }
 
-void Session::LoginMessage( const string& message )
+void Session::LoginMessage( const std::string& message )
 {
 	switch(_loginStage)
 	{
@@ -207,11 +207,11 @@ void Session::LoginMessage( const string& message )
 	}
 }
 
-string ExtractCommand(const string& message, string& remainder)
+std::string ExtractCommand(const std::string& message, std::string& remainder)
 {
 	size_t idx = message.find(' ');
-	string command;
-	if(string::npos == idx)
+	std::string command;
+	if(std::string::npos == idx)
 	{
 		command = message;
 		remainder = "";
@@ -220,7 +220,7 @@ string ExtractCommand(const string& message, string& remainder)
 	{
 		command = message.substr(0, idx);
 		idx = message.find_first_not_of(' ', idx);
-		if(string::npos == idx)
+		if(std::string::npos == idx)
 			remainder = "";
 		else
 			remainder = message.substr(idx);
@@ -237,12 +237,12 @@ string ExtractCommand(const string& message, string& remainder)
 
 void Session::DoWho()
 {
-	vector<User*> users;
+	std::vector<User*> users;
 	World::Instance()->GetUsers(users);
 
-	stringstream ss;
+	std::stringstream ss;
 	ss << "--[" << GREENCOLOR << "Users Online" << CLEARCOLOR << "]------\r\n";
-	for(vector<User*>::const_iterator user = users.begin(); user != users.end(); ++user)
+	for(std::vector<User*>::const_iterator user = users.begin(); user != users.end(); ++user)
 	{
 		User* up = *user;
 		if(up->Admin)
@@ -254,14 +254,14 @@ void Session::DoWho()
 	Send(ss.str());
 }
 
-void Session::DoHelp(const string& message)
+void Session::DoHelp(const std::string& message)
 {
-	string remainder;
-	string topic = ExtractCommand(message, remainder);
+	std::string remainder;
+	std::string topic = ExtractCommand(message, remainder);
 
 	if("commands" == topic)
 	{
-		stringstream ss;
+		std::stringstream ss;
 		ss << "--[" << GREENCOLOR << "Help - Commands" << CLEARCOLOR << "]------\r\n";
 		ss << "[" << REDCOLOR << "Social Commands" << CLEARCOLOR << "]\r\n";
 		ss << GREENCOLOR << "about" << CLEARCOLOR << " <player> - Get information about the player\r\n";
@@ -288,7 +288,7 @@ void Session::DoHelp(const string& message)
 	}
 	else if("game" == topic)
 	{
-		stringstream ss;
+		std::stringstream ss;
 
 		ss << "--[" << GREENCOLOR << "Help - Game" << CLEARCOLOR << "]------\r\n";
 
@@ -314,7 +314,7 @@ void Session::DoHelp(const string& message)
 	}
 	else if("story" == topic)
 	{
-		stringstream ss;
+		std::stringstream ss;
 
 		ss << "--[" << GREENCOLOR << "Help - Story" << CLEARCOLOR << "]------\r\n";
 		ss << "Money. Its all about the damn money. To make everything \"fair\" it was decided\r\n";
@@ -334,7 +334,7 @@ void Session::DoHelp(const string& message)
 	}
 	else if("contracts" == topic)
 	{
-		stringstream ss;
+		std::stringstream ss;
 
 		ss << "--[" << GREENCOLOR << "Help - Contracts" << CLEARCOLOR << "]------\r\n";
 		ss << "Contracts are how you make money. To create a contract, one player makes an\r\n";
@@ -368,13 +368,13 @@ void Session::DoHelp(const string& message)
 
 void Session::DoLeaders()
 {
-	const vector<User*>& users = Users::Instance()->GetLeaders();
+	const std::vector<User*>& users = Users::Instance()->GetLeaders();
 
 	int pos = 1;
 
-	stringstream ss;
+	std::stringstream ss;
 	ss << "--[" << GREENCOLOR << "Leaders" << CLEARCOLOR << "]------\r\n";
-	for(vector<User*>::const_iterator up = users.begin(); up != users.end(); ++up)
+	for(std::vector<User*>::const_iterator up = users.begin(); up != users.end(); ++up)
 	{
 		if((*up)->Done)
 			ss << "[Dead] ";
@@ -385,10 +385,10 @@ void Session::DoLeaders()
 	Send(ss.str());
 }
 
-void Session::DoAbout( const string& message )
+void Session::DoAbout( const std::string& message )
 {
-	string remainder;
-	string username = ExtractCommand(message, remainder);
+	std::string remainder;
+	std::string username = ExtractCommand(message, remainder);
 
 	if(0 == username.length())
 	{
@@ -411,10 +411,10 @@ void Session::DoAbout( const string& message )
 		Send("The user is out of time\r\n");
 }
 
-void Session::DoTell( const string& message )
+void Session::DoTell( const std::string& message )
 {
-	string remainder;
-	string username = ExtractCommand(message, remainder);
+	std::string remainder;
+	std::string username = ExtractCommand(message, remainder);
 
 	if(0 == username.length() || 0 == remainder.length())
 	{
@@ -429,18 +429,18 @@ void Session::DoTell( const string& message )
 		return;
 	}
 
-	stringstream ss;
+	std::stringstream ss;
 	ss << _user->Username << " whispers: " << remainder.substr(0,256) << "\r\n";
 	session->Send(ss.str());
 
 	Log(_user->Username << " whispers to " << session->GetUser()->Username << ": " << remainder.substr(0,256));
 }
 
-void Session::DoSay( const string& message )
+void Session::DoSay( const std::string& message )
 {
 	if(message.length() > 0)
 	{
-		stringstream ss;
+		std::stringstream ss;
 		ss << "<" << _user->Username << "> " << message.substr(0,256) << "\r\n";
 		World::Instance()->Broadcast(ss.str());
 
@@ -452,7 +452,7 @@ void Session::DoSay( const string& message )
 	}
 }
 
-void Session::DoSetAbout( const string& message )
+void Session::DoSetAbout( const std::string& message )
 {
 	_user->About = message.substr(0,80);
 	SendStream("About set to:\r\n" << _user->About << "\r\n");
@@ -471,7 +471,7 @@ void Session::DoSave()
 	SendStream(REDCOLOR << "Saved\r\n" << CLEARCOLOR);
 }
 
-void Session::DoOffer( const string& message )
+void Session::DoOffer( const std::string& message )
 {
 	if(_user->Done)
 	{
@@ -479,11 +479,11 @@ void Session::DoOffer( const string& message )
 		return;
 	}
 
-	string remainder;
-	string myAmountStr = ExtractCommand(message, remainder);
-	string target = ExtractCommand(remainder, remainder);
-	string theirAmountStr = ExtractCommand(remainder, remainder);
-	string timeStr = ExtractCommand(remainder, remainder);
+	std::string remainder;
+	std::string myAmountStr = ExtractCommand(message, remainder);
+	std::string target = ExtractCommand(remainder, remainder);
+	std::string theirAmountStr = ExtractCommand(remainder, remainder);
+	std::string timeStr = ExtractCommand(remainder, remainder);
 
 	if(0 == myAmountStr.length() || 0 == target.length() || 0 == theirAmountStr.length() || 0 == timeStr.length())
 	{
@@ -501,12 +501,12 @@ void Session::DoOffer( const string& message )
 		return;
 	}
 
-	time = min(Settings::maxDuration, time);
+	time = std::min(Settings::maxDuration, time);
 
 	Contracts::Instance()->CreateContract(this, myAmount, target, theirAmount, time, false);
 }
 
-void Session::DoEvilOffer( const string& message )
+void Session::DoEvilOffer( const std::string& message )
 {
 	if(_user->Done)
 	{
@@ -514,11 +514,11 @@ void Session::DoEvilOffer( const string& message )
 		return;
 	}
 
-	string remainder;
-	string myAmountStr = ExtractCommand(message, remainder);
-	string target = ExtractCommand(remainder, remainder);
-	string theirAmountStr = ExtractCommand(remainder, remainder);
-	string timeStr = ExtractCommand(remainder, remainder);
+	std::string remainder;
+	std::string myAmountStr = ExtractCommand(message, remainder);
+	std::string target = ExtractCommand(remainder, remainder);
+	std::string theirAmountStr = ExtractCommand(remainder, remainder);
+	std::string timeStr = ExtractCommand(remainder, remainder);
 
 	if(0 == myAmountStr.length() || 0 == target.length() || 0 == theirAmountStr.length() || 0 == timeStr.length())
 	{
@@ -536,17 +536,17 @@ void Session::DoEvilOffer( const string& message )
 		return;
 	}
 
-	time = min(Settings::maxDuration, time);
+	time = std::min(Settings::maxDuration, time);
 
 	Contracts::Instance()->CreateContract(this, myAmount, target, theirAmount, time, true);
 }
 
 void Session::DoOffers()
 {
-	vector<Contract*> offers;
+	std::vector<Contract*> offers;
 	Contracts::Instance()->GetOffers(_user, offers);
 
-	stringstream ss;
+	std::stringstream ss;
 	ss << "--[" << GREENCOLOR << "Offers" << CLEARCOLOR << "]------\r\n";
 
 	if(0 == offers.size())
@@ -554,7 +554,7 @@ void Session::DoOffers()
 		ss << "No pending offers.\r\n";
 	}
 
-	for(vector<Contract*>::iterator offer = offers.begin(); offer != offers.end(); ++offer)
+	for(std::vector<Contract*>::iterator offer = offers.begin(); offer != offers.end(); ++offer)
 	{
 		Contract* ptr = *offer;
 		ss << ptr->User1 << " (" << ptr->User1Contribution << ") <-> (" << ptr->User2Contribution << ") " << ptr->User2 << " -- " << ptr->Duration << " minute(s)\r\n";
@@ -565,10 +565,10 @@ void Session::DoOffers()
 
 void Session::DoContracts()
 {
-	vector<Contract*> contracts;
+	std::vector<Contract*> contracts;
 	Contracts::Instance()->GetContracts(_user, contracts);
 
-	stringstream ss;
+	std::stringstream ss;
 	ss << "--[" << GREENCOLOR << "Contracts " << contracts.size() << "/" << Settings::maxContracts << CLEARCOLOR << "]------\r\n";
 
 	if(0 == contracts.size())
@@ -576,7 +576,7 @@ void Session::DoContracts()
 		ss << "No existing contracts.\r\n";
 	}
 
-	for(vector<Contract*>::iterator contract = contracts.begin(); contract != contracts.end(); ++contract)
+	for(std::vector<Contract*>::iterator contract = contracts.begin(); contract != contracts.end(); ++contract)
 	{
 		Contract* ptr = *contract;
 		ss << ptr->User1 << " (" << ptr->User1Contribution << ") <-> (" << ptr->User2Contribution << ") " << ptr->User2 << " -- " << ptr->Duration << " minute(s)\r\n";
@@ -587,10 +587,10 @@ void Session::DoContracts()
 
 void Session::DoResults()
 {
-	vector<Contract*> contracts;
+	std::vector<Contract*> contracts;
 	Contracts::Instance()->GetFinished(_user, contracts);
 
-	stringstream ss;
+	std::stringstream ss;
 	ss << "--[" << GREENCOLOR << "Completed " << contracts.size() << CLEARCOLOR << "]------\r\n";
 
 	if(0 == contracts.size())
@@ -599,7 +599,7 @@ void Session::DoResults()
 	}
 
 	int index = 1;
-	for(vector<Contract*>::iterator contract = contracts.begin(); contract != contracts.end(); ++contract)
+	for(std::vector<Contract*>::iterator contract = contracts.begin(); contract != contracts.end(); ++contract)
 	{
 		Contract* ptr = *contract;
 		ss << "id " << index << " ] " << ptr->User1 << " (" << ptr->User1Profit << " - " << ptr->User1Contribution << ") <-> (" << ptr->User2Profit << " - " << ptr->User2Contribution << ") " << ptr->User2 << "\r\n";
@@ -609,7 +609,7 @@ void Session::DoResults()
 	Send(ss.str());
 }
 
-void Session::DoRate(const string& message)
+void Session::DoRate(const std::string& message)
 {
 	if(_user->Done)
 	{
@@ -617,10 +617,10 @@ void Session::DoRate(const string& message)
 		return;
 	}
 
-	string remainder;
-	string idStr = ExtractCommand(message, remainder);
-	string user = ExtractCommand(remainder, remainder);
-	string ratingStr = ExtractCommand(remainder, remainder);
+	std::string remainder;
+	std::string idStr = ExtractCommand(message, remainder);
+	std::string user = ExtractCommand(remainder, remainder);
+	std::string ratingStr = ExtractCommand(remainder, remainder);
 
 	if(0 == idStr.length() || 0 == user.length() || 0 == ratingStr.length())
 	{
@@ -650,7 +650,7 @@ void Session::DoRate(const string& message)
 		return;
 	}
 
-	vector<Contract*> contracts;
+	std::vector<Contract*> contracts;
 	Contracts::Instance()->GetFinished(_user, contracts);
 
 	if(id < 0 || id >= (int)contracts.size())
@@ -684,7 +684,7 @@ void Session::DoRate(const string& message)
 	SendStream("You rated '" << otherUser->Username << "' with a " << rating << " rating on contract id " << id+1 << ".\r\n");
 }
 
-void Session::DoAccept(const string& message)
+void Session::DoAccept(const std::string& message)
 {
 	if(_user->Done)
 	{
@@ -692,8 +692,8 @@ void Session::DoAccept(const string& message)
 		return;
 	}
 
-	string remainder;
-	string target = ExtractCommand(message, remainder);
+	std::string remainder;
+	std::string target = ExtractCommand(message, remainder);
 
 	if(0 == target.length())
 	{
@@ -704,7 +704,7 @@ void Session::DoAccept(const string& message)
 	Contracts::Instance()->AcceptOffer(this, target, false);
 }
 
-void Session::DoEvilAccept(const string& message)
+void Session::DoEvilAccept(const std::string& message)
 {
 	if(_user->Done)
 	{
@@ -712,8 +712,8 @@ void Session::DoEvilAccept(const string& message)
 		return;
 	}
 
-	string remainder;
-	string target = ExtractCommand(message, remainder);
+	std::string remainder;
+	std::string target = ExtractCommand(message, remainder);
 
 	if(0 == target.length())
 	{
@@ -724,7 +724,7 @@ void Session::DoEvilAccept(const string& message)
 	Contracts::Instance()->AcceptOffer(this, target, true);
 }
 
-void Session::DoReject(const string& message)
+void Session::DoReject(const std::string& message)
 {
 	if(_user->Done)
 	{
@@ -732,8 +732,8 @@ void Session::DoReject(const string& message)
 		return;
 	}
 
-	string remainder;
-	string target = ExtractCommand(message, remainder);
+	std::string remainder;
+	std::string target = ExtractCommand(message, remainder);
 
 	if(0 == target.length())
 	{
@@ -744,10 +744,10 @@ void Session::DoReject(const string& message)
 	Contracts::Instance()->RejectOffer(this, target);
 }
 
-void Session::CommandMessage( const string& message )
+void Session::CommandMessage( const std::string& message )
 {
-	string remainder;
-	string command = ExtractCommand(message, remainder);
+	std::string remainder;
+	std::string command = ExtractCommand(message, remainder);
 
 	if(command.length() == 0)
 	{
@@ -909,7 +909,7 @@ void Session::CommandMessage( const string& message )
 // NETWORK
 //
 
-void Session::Send( const string& message )
+void Session::Send( const std::string& message )
 {
 	_sendQueue.push(message);
 
@@ -919,7 +919,7 @@ void Session::Send( const string& message )
 	}
 }
 
-void Session::SendImmediate(const string& message)
+void Session::SendImmediate(const std::string& message)
 {
 	boost::asio::write(_socket, boost::asio::buffer(message.data(), message.length()));
 }
@@ -947,9 +947,9 @@ void Session::HandleSend( const boost::system::error_code& error )
 	}
 }
 
-string StripInput(const char* input)
+std::string StripInput(const char* input)
 {
-	stringstream ss;
+	std::stringstream ss;
 	bool leading = true;
 
 	while(0 != *input)
@@ -984,8 +984,8 @@ void Session::HandleRecv( const boost::system::error_code& error, size_t nRecvd 
 
 	if(!error)
 	{
-		string line;
-		istream is(&_buffer);
+		std::string line;
+		std::istream is(&_buffer);
 		getline(is, line);
 		line = StripInput(line.c_str());
 

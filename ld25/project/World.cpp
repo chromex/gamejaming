@@ -1,13 +1,17 @@
 #include "World.h"
+
+#ifndef LOG_H
 #include "Log.h"
+#endif
+
+#ifndef SESSION_H
 #include "Session.h"
+#endif
 
 #include <algorithm>
 
 World::World()
-{
-
-}
+{}
 
 World::~World()
 {
@@ -37,7 +41,7 @@ void World::AddSession( Session* session )
 		return;
 	}
 
-	string username = session->GetUser()->Username;
+	std::string username = session->GetUser()->Username;
 	std::transform(username.begin(), username.end(), username.begin(), ::tolower);
 
 	if(_sessions.find(username) == _sessions.end())
@@ -64,7 +68,7 @@ void World::RemoveSession( Session* session )
 	}
 }
 
-void World::Broadcast( const string& message )
+void World::Broadcast( const std::string& message )
 {
 	for(SessionMap::iterator entry = _sessions.begin(); entry != _sessions.end(); ++entry)
 	{
@@ -72,7 +76,7 @@ void World::Broadcast( const string& message )
 	}
 }
 
-void World::GetUsers( vector<User*>& users )
+void World::GetUsers( std::vector<User*>& users )
 {
 	for(SessionMap::iterator entry = _sessions.begin(); entry != _sessions.end(); ++entry)
 	{
@@ -80,7 +84,7 @@ void World::GetUsers( vector<User*>& users )
 	}
 }
 
-Session* World::GetSession( string username )
+Session* World::GetSession( std::string username )
 {
 	std::transform(username.begin(), username.end(), username.begin(), ::tolower);
 	SessionMap::iterator session = _sessions.find(username);

@@ -4,7 +4,6 @@
 #include <vector>
 #include <map>
 #include <string>
-using namespace std;
 
 class Session;
 struct User;
@@ -18,12 +17,12 @@ public:
 	static World* Instance();
 	void AddSession(Session* session);
 	void RemoveSession(Session* session);
-	void Broadcast(const string& message);
-	void GetUsers(vector<User*>& users);
-	Session* GetSession(string username);
+	void Broadcast(const std::string& message);
+	void GetUsers(std::vector<User*>& users);
+	Session* GetSession(std::string username);
 
 private:
-	typedef map<string, Session*> SessionMap;
+	typedef std::map<std::string, Session*> SessionMap;
 	SessionMap _sessions;
 };
 

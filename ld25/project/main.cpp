@@ -1,11 +1,22 @@
-#include <iostream>
-using namespace std;
-
+#ifndef LOG_H
 #include "Log.h"
+#endif
+
+#ifndef SERVER_H
 #include "Server.h"
+#endif
+
+#ifndef SETTINGS_H
 #include "Settings.h"
+#endif
+
+#ifndef USERS_H
 #include "Users.h"
+#endif
+
+#ifndef CONTRACTS_H
 #include "Contracts.h"
+#endif
 
 int main(int argc, char** argv)
 {

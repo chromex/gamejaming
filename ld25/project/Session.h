@@ -1,13 +1,11 @@
 #ifndef SESSION_H
 #define SESSION_H
 
-#include <boost/bind.hpp>
 #include <boost/asio.hpp>
 using boost::asio::ip::tcp;
 
 #include <queue>
 #include <string>
-using namespace std;
 
 #include "Users.h"
 
@@ -23,35 +21,35 @@ public:
 	tcp::socket& Socket();
 	User* GetUser();
 
-	void Send(const string& message);
-	void SendImmediate(const string& message);
+	void Send(const std::string& message);
+	void SendImmediate(const std::string& message);
 
 private:
 	// Commands
-	void DoAbout(const string& message);
-	void DoHelp(const string& message);
+	void DoAbout(const std::string& message);
+	void DoHelp(const std::string& message);
 	void DoWho();
-	void DoSay(const string& message);
+	void DoSay(const std::string& message);
 	void DoQuit();
 	void DoSave();
-	void DoSetAbout(const string& message);
-	void DoTell(const string& message);
+	void DoSetAbout(const std::string& message);
+	void DoTell(const std::string& message);
 	void DoLeaders();
-	void DoOffer(const string& message);
-	void DoEvilOffer(const string& message);
+	void DoOffer(const std::string& message);
+	void DoEvilOffer(const std::string& message);
 	void DoOffers();
 	void DoContracts();
 	void DoResults();
-	void DoAccept(const string& message);
-	void DoEvilAccept(const string& message);
-	void DoReject(const string& message);
-	void DoRate(const string& message);
+	void DoAccept(const std::string& message);
+	void DoEvilAccept(const std::string& message);
+	void DoReject(const std::string& message);
+	void DoRate(const std::string& message);
 
 	// Auth/create
 	void SendWelcome();
 	void SendPrompt();
-	void LoginMessage(const string& message);
-	void CommandMessage(const string& message);
+	void LoginMessage(const std::string& message);
+	void CommandMessage(const std::string& message);
 
 	// Network
 	void HandleSend(const boost::system::error_code& error);
@@ -60,7 +58,7 @@ private:
 	void ChainRecv();
 
 	// Types
-	typedef queue<string> MessageQueue;
+	typedef std::queue<std::string> MessageQueue;
 
 	// Members
 	tcp::socket _socket;
@@ -68,8 +66,8 @@ private:
 	int _loginStage;
 	boost::asio::streambuf _buffer;
 
-	string _authUsername;
-	string _authPassword;
+	std::string _authUsername;
+	std::string _authPassword;
 
 	User* _user;
 	User* _authUser;

@@ -1,13 +1,7 @@
 #ifndef SERVER_H
 #define SERVER_H
 
-#include <boost/asio.hpp>
-#include <boost/bind.hpp>
-#include <boost/date_time/posix_time/posix_time.hpp>
-
 #include "Session.h"
-
-using boost::asio::ip::tcp;
 
 class Server
 {

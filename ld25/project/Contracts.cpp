@@ -7,6 +7,8 @@
 #include "World.h"
 #include "Settings.h"
 
+#include <boost/date_time/posix_time/posix_time.hpp>
+
 Contracts::Contracts()
 {
 	char* data = Util::LoadFile("contracts.json");
@@ -137,7 +139,7 @@ void Contracts::Save() const
 		arr.push_back(entry);
 	}
 
-	string results;
+	std::string results;
 	Serialize(arr, results);
 
 	Util::WriteFile("contracts.json", results.data(), results.length());
@@ -214,14 +216,14 @@ void Contracts::Tick()
 
 			if(0 != session1)
 			{
-				stringstream ss;
+				std::stringstream ss;
 				ss << "You made $" << ptr->User1Profit << " from your contract with '" << ptr->User2 << "'!\r\n";
 				session1->Send(ss.str());
 			}
 
 			if(0 != session2)
 			{
-				stringstream ss;
+				std::stringstream ss;
 				ss << "You made $" << ptr->User2Profit << " from your contract with '" << ptr->User1 << "'!\r\n";
 				session2->Send(ss.str());
 			}
@@ -229,12 +231,12 @@ void Contracts::Tick()
 	}
 }
 
-Contract* Contracts::CreateContract( Session* sender, int myAmount, const string& other, int theirAmount, int time, bool evil )
+Contract* Contracts::CreateContract( Session* sender, int myAmount, const std::string& other, int theirAmount, int time, bool evil )
 {
 	User* otherUser = Users::Instance()->GetUserByUsername(other);
 	if(0 == otherUser)
 	{
-		stringstream ss;
+		std::stringstream ss;
 		ss << "No such user '" << other << "'. Cannot create contract offer.\r\n";
 		sender->Send(ss.str());
 		return 0;
@@ -248,7 +250,7 @@ Contract* Contracts::CreateContract( Session* sender, int myAmount, const string
 
 	if(ContractExists(sender->GetUser(), otherUser))
 	{
-		stringstream ss;
+		std::stringstream ss;
 		ss << "Contract or offer already exists between you and '" << otherUser->Username << "'.\r\n";
 		sender->Send(ss.str());
 		return 0;
@@ -298,7 +300,7 @@ bool Contracts::ContractExists( User* user1, User* user2 ) const
 	return false;
 }
 
-void Contracts::GetOffers( User* user, vector<Contract*>& offers )
+void Contracts::GetOffers( User* user, std::vector<Contract*>& offers )
 {
 	for(ContractVec::const_iterator contract = _contracts.begin(); contract != _contracts.end(); ++contract)
 	{
@@ -307,7 +309,7 @@ void Contracts::GetOffers( User* user, vector<Contract*>& offers )
 	}
 }
 
-void Contracts::GetContracts( User* user, vector<Contract*>& contracts )
+void Contracts::GetContracts( User* user, std::vector<Contract*>& contracts )
 {
 	for(ContractVec::const_iterator contract = _contracts.begin(); contract != _contracts.end(); ++contract)
 	{
@@ -316,7 +318,7 @@ void Contracts::GetContracts( User* user, vector<Contract*>& contracts )
 	}
 }
 
-void Contracts::GetFinished( User* user, vector<Contract*>& finished )
+void Contracts::GetFinished( User* user, std::vector<Contract*>& finished )
 {
 	for(ContractVec::const_iterator contract = _contracts.begin(); contract != _contracts.end(); ++contract)
 	{
@@ -325,7 +327,7 @@ void Contracts::GetFinished( User* user, vector<Contract*>& finished )
 	}
 }
 
-void Contracts::AcceptOffer( Session* sender, const string& other, bool evil )
+void Contracts::AcceptOffer( Session* sender, const std::string& other, bool evil )
 {
 	ContractVec offers;
 	GetOffers(sender->GetUser(), offers);
@@ -375,7 +377,7 @@ void Contracts::AcceptOffer( Session* sender, const string& other, bool evil )
 
 	if(0 == c)
 	{
-		stringstream ss;
+		std::stringstream ss;
 		ss << "No contract sent by '" << otherUser->Username << "' to accept.\r\n";
 		sender->Send(ss.str());
 		return;
@@ -391,7 +393,7 @@ void Contracts::AcceptOffer( Session* sender, const string& other, bool evil )
 	GetContracts(otherUser, contracts);
 	if(contracts.size() >= Settings::maxContracts)
 	{
-		stringstream ss;
+		std::stringstream ss;
 		ss << "'" << otherUser->Username << "' can't accept any more offers for now.\r\n";
 		sender->Send(ss.str());
 	}
@@ -404,7 +406,7 @@ void Contracts::AcceptOffer( Session* sender, const string& other, bool evil )
 
 	if(otherUser->Money < c->User1Contribution)
 	{
-		stringstream ss;
+		std::stringstream ss;
 		ss << "'" << otherUser->Username << "' cannot afford the offer!\r\n";
 		sender->Send(ss.str());
 		return;
@@ -419,13 +421,13 @@ void Contracts::AcceptOffer( Session* sender, const string& other, bool evil )
 	if(!sender->GetUser()->Started)
 	{
 		sender->GetUser()->Started = true;
-		sender->GetUser()->StartTime = boost::posix_time::second_clock::local_time();
+		sender->GetUser()->StartTime = Time::TimeFromLocalTime();
 		Log(sender->GetUser()->Username << "'s life has begun!");
 	}
 	if(!otherUser->Started)
 	{
 		otherUser->Started = true;
-		otherUser->StartTime = boost::posix_time::second_clock::local_time();
+		otherUser->StartTime = Time::TimeFromLocalTime();
 		Log(otherUser->Username << "'s life has begun!");
 	}
 
@@ -439,13 +441,13 @@ void Contracts::AcceptOffer( Session* sender, const string& other, bool evil )
 	Session* otherSession = World::Instance()->GetSession(otherUser->Username);
 	if(0 != otherSession)
 	{
-		stringstream ss;
+		std::stringstream ss;
 		ss << "'" << sender->GetUser()->Username << "' accepted your offer!\r\n";
 		otherSession->Send(ss.str());
 	}
 }
 
-void Contracts::RejectOffer( Session* sender, const string& other )
+void Contracts::RejectOffer( Session* sender, const std::string& other )
 {
 	ContractVec offers;
 	GetOffers(sender->GetUser(), offers);
@@ -475,7 +477,7 @@ void Contracts::RejectOffer( Session* sender, const string& other )
 
 	if(0 == c)
 	{
-		stringstream ss;
+		std::stringstream ss;
 		ss << "No contract sent by '" << otherUser->Username << "' to reject.\r\n";
 		sender->Send(ss.str());
 		return;
@@ -494,7 +496,7 @@ void Contracts::RejectOffer( Session* sender, const string& other )
 	Session* otherSession = World::Instance()->GetSession(otherUser->Username);
 	if(0 != otherSession)
 	{
-		stringstream ss;
+		std::stringstream ss;
 		ss << "'" << sender->GetUser()->Username << "' rejected your offer! Screw that guy!\r\n";
 		otherSession->Send(ss.str());
 	}

@@ -74,7 +74,7 @@ Users::Users()
 
 					if(user->Started && (obj.end() != startTime) && startTime->second.IsString())
 					{
-						user->StartTime = boost::posix_time::time_from_string(startTime->second.string());
+						user->StartTime = Time::TimeFromString(startTime->second.string());
 					}
 
 					if(obj.end() != about && about->second.IsString())
@@ -121,23 +121,23 @@ void Users::Save() const
 		entry["Started"] = (*up)->Started;
 		entry["Done"] = (*up)->Done;
 		if((*up)->Started)
-			entry["StartTime"] = boost::posix_time::to_simple_string((*up)->StartTime);
+			entry["StartTime"] = (*up)->StartTime->ToString();
 		arr.push_back(entry);
 	}
 
-	string results;
+	std::string results;
 	Serialize(arr, results);
 
 	Util::WriteFile("users.json", results.data(), results.length());
 }
 
-User* Users::GetUserByUsername( string uname )
+User* Users::GetUserByUsername( std::string uname )
 {
 	std::transform(uname.begin(), uname.end(), uname.begin(), ::tolower);
 
 	for(UserVec::const_iterator up = _users.begin(); up != _users.end(); ++up)
 	{
-		string other = (*up)->Username;
+		std::string other = (*up)->Username;
 		std::transform(other.begin(), other.end(), other.begin(), ::tolower);
 		if(other == uname)
 		{
@@ -154,7 +154,7 @@ Users* Users::Instance()
 	return &db;
 }
 
-User* Users::CreateUser( const string& uname, const string& password )
+User* Users::CreateUser( const std::string& uname, const std::string& password )
 {
 	if(0 != GetUserByUsername(uname))
 	{
@@ -180,7 +180,7 @@ bool CompareUser(User* a, User* b)
 	return a->Money > b->Money;
 }
 
-const vector<User*>& Users::GetLeaders()
+const std::vector<User*>& Users::GetLeaders()
 {
 	return _leaders;
 }
@@ -219,9 +219,9 @@ void Users::Tick()
 		User* ptr = *user;
 		if(ptr->Started && !ptr->Done)
 		{
-			boost::posix_time::time_duration td = boost::posix_time::second_clock::local_time() - ptr->StartTime;
+			int minutes = ptr->StartTime->MinutesFromLocal();
 
-			if(td.hours() > 0)
+			if(minutes > 60)
 			{
 				ptr->Done = true;
 				Log(ptr->Username << "'s time is up");
@@ -242,4 +242,11 @@ User::User()
 	, Admin(false)
 	, Started(false)
 	, Done(false)
+	, StartTime(0)
 {}
+
+User::~User()
+{
+	if(0 != StartTime)
+		delete StartTime;
+}
