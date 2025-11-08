@@ -11,7 +11,7 @@ What is onboarding like?
 # Plan
 - Press button to get attachment
 - Move attachment
-- Attach to bomb
+- Remove attachment
 - Blow up bomb
 - Physics!
 - Targets
@@ -26,4 +26,4 @@ What is onboarding like?
 - bomb, and attachments, can have children
 - attachment needs to have a “type”
 - placing an attachment follows surface of existing items?
-	-	OR you spawn an attachment on something specific and move it around the surface
+	-	OR you spawn an attachment on something specific and move it around the surface. way easier than snapping and shit
