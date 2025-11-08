@@ -9,7 +9,6 @@ Button to add another thing?
 What is onboarding like?
 
 # Plan
-- Can see the bomb
 - Press button to get attachment
 - Move attachment
 - Attach to bomb
@@ -21,3 +20,10 @@ What is onboarding like?
 - Attachment purchase process, cost
 - Tutorial
 - More levels
+
+# planning structure
+- root is the bomb
+- bomb, and attachments, can have children
+- attachment needs to have a “type”
+- placing an attachment follows surface of existing items?
+	-	OR you spawn an attachment on something specific and move it around the surface
