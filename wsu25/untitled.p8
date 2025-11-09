@@ -48,6 +48,16 @@ end
 function begin_game(id)
 	gstate=2
 	set_level(id)
+	
+	if true then
+		local att=add_attach(bmb,0.63)
+		add_attach(att,0.65)
+		att=add_attach(att,0.85)
+		add_attach(att,0.9)
+		att=add_attach(bmb,0.2)
+		add_attach(att,0.4)
+		add_attach(bmb,0)
+	end
 end
 
 function bmb_to_list()
@@ -84,6 +94,17 @@ function fnd_tgt()
 	return nil
 end
 
+function add_attach(parent,rot)
+	local att={
+		id=2,
+		rad=4,
+		rot=rot,
+		cld={}
+	}
+	add(parent.cld,att)
+	return att
+end
+
 target=nil
 selected=nil
 function pln_update()
@@ -96,17 +117,13 @@ function pln_update()
 		if target!=nil then
 			-- add!
 			if btnp(❎) then
-				local att={
-					id=2,
-					rad=4,
-					rot=0,
-					cld={}
-				}
-				add(target.cld,att)
+				local att=add_attach(target,0)
 				selected=att
 			elseif btnp(🅾️) and target!=bmb then
 				selected=target
 			end
+		elseif btnp(❎) or btnp(🅾️) then
+			start_sim()
 		end
 	else
 		if (btn(⬅️) or btn(⬆️)) selected.rot+=0.025
@@ -115,26 +132,63 @@ function pln_update()
 	end
 end
 
+actors={}
+
+function start_sim()
+	phase=2
+	actors={}
+	splode(bmb.x,bmb.y,20)
+	
+	for a in all(bmb.cld) do
+		local len=dist(bmb.x,bmb.y,a.x,a.y)
+		add(actors,{
+			ref=a,
+			x=a.x,
+			y=a.y,
+			vel=2.5,
+			vx=(a.x-bmb.x)/len,
+			vy=(a.y-bmb.y)/len
+		})
+	end
+end
+
+function sim_update()
+	if btnp(❎) or btnp(🅾️) then
+		phase=1
+	else
+		-- move actors and do friction
+		for a in all(actors) do
+			a.x+=a.vx*a.vel
+			a.y+=a.vy*a.vel
+		end
+		
+		-- compute individuals
+		-- detect hits w/ walls
+		-- reflect
+		-- break up groups
+	end
+end
+
 function game_update()
 	if selected==nil then
-		if (btn(⬅️)) pl.x -= 1
-		if (btn(➡️)) pl.x += 1
-		if (btn(⬆️)) pl.y -= 1
-		if (btn(⬇️)) pl.y += 1
+		if (btn(⬅️)) pl.x -= 2
+		if (btn(➡️)) pl.x += 2
+		if (btn(⬆️)) pl.y -= 2
+		if (btn(⬇️)) pl.y += 2
 		pl.x=clamp(pl.x,mdata.minx,mdata.maxx)
 		pl.y=clamp(pl.y,mdata.miny,mdata.maxy)
 	end
 	
-	if target==nil and selected==nil and btnp(❎) then
-		splode(pl.x,pl.y,20)
+	if (phase==1) then 
+		pln_update()
+	else
+		sim_update()
 	end
-	
-	if (phase==1) pln_update()
 	
 	tick_splode()
 end
 
-function draw_bomb()
+function draw_pln_bomb()
 	local lst=bmb_to_list()
 	for ent in all(lst) do
 		doblink = (ent==selected) or ((ent==target) and (selected==nil))
@@ -160,16 +214,44 @@ function draw_bomb()
 	end
 end
 
+function draw_actor_child(att,px,py,pr) 
+	local sp=types[att.id].sp
+	
+	local offset=pr+att.rad
+	local x=px+offset*cos(att.rot)
+	local y=py+offset*sin(att.rot)
+	
+	spr(sp,x-att.rad,y-att.rad)
+	for a in all(att.cld) do
+		draw_actor_child(a,x,y,att.rad)
+	end
+end
+
+function draw_sim()
+	for a in all(actors) do
+		local ref=a.ref
+		local sp=types[ref.id].sp
+		spr(sp,a.x-ref.rad,a.y-ref.rad)
+		for c in all(ref.cld) do
+			draw_actor_child(c,a.x,a.y,ref.rad)
+		end
+	end
+end
+
 function game_draw()
 	cls(0)
 	camera(pl.x-64,pl.y-64)
 	map(mdata[1],mdata[2],0,0,mdata[3],mdata[4])
 	
-	draw_bomb()
+	if phase==1 then
+		draw_pln_bomb()
+	else
+		draw_sim()
+	end
 	
 	draw_splode()
 	
-	if (selected==nil) spr(0,pl.x-3,pl.y-3)
+	if (phase==1 and selected==nil) spr(0,pl.x-3,pl.y-3)
 	
 	camera()
 	rectfill(0,121,128,128,8)
@@ -208,18 +290,15 @@ function splode(x,y,num)
 end
 
 function tick_splode()
-	rem={}
+	keep={}
 	for part in all(particles) do
 		part.mod=(part.frames/30+0.3)
 		part.x+=part.vx*part.mod
 		part.y+=part.vy*part.mod
 		part.frames-=1
-		if (part.frames<0) add(rem,part)		
+		if (part.frames>=0) add(keep,part)		
 	end
-	
-	for r in all(rem) do
-		del(particles,r)
-	end
+	particles=keep
 end
 
 function draw_splode()
