@@ -151,10 +151,10 @@ end
 
 function game_update()
 	if selected==nil then
-		if (btn(⬅️)) pl.x -= 2
-		if (btn(➡️)) pl.x += 2
-		if (btn(⬆️)) pl.y -= 2
-		if (btn(⬇️)) pl.y += 2
+		if (btn(⬅️)) pl.x -= 1
+		if (btn(➡️)) pl.x += 1
+		if (btn(⬆️)) pl.y -= 1
+		if (btn(⬇️)) pl.y += 1
 		pl.x=clamp(pl.x,mdata.minx,mdata.maxx)
 		pl.y=clamp(pl.y,mdata.miny,mdata.maxy)
 	end
@@ -285,16 +285,8 @@ function register_aabb(x,y,w,h)
 end
 
 function debug_phys()
-	crcl={x=pl.x,y=pl.y,rad=3}
-	circ(crcl.x,crcl.y,crcl.rad,8)
-	
 	for c in all(colliders) do
 		c:draw()
-		local col=c:check(crcl)
-		if col!= nil then
-			circ(col.hitx,col.hity,1,15)
-			dbg(""..col.dir.x.." "..col.dir.y)
-		end
 	end
 end
 
@@ -340,8 +332,15 @@ function make_actor(id,x,y,vx,vy,vel,rad)
 			local sp=types[self.id].sp
 			spr(sp,dx-self.rad,dy-self.rad)
 		end,
-		add_collisions=function (self)
-			-- todo
+		add_collisions=function (self,collisions)
+			local crcl={x=self.phys.x,y=self.phys.y,rad=self.rad}
+			for c in all(colliders) do
+				local r=c:check(crcl)
+				if r!=nil then
+					r.actor=self
+					add(collisions,r)
+				end
+			end
 		end
 	}
 end
@@ -366,16 +365,23 @@ function init_sim()
 	end
 	
 	colliders={}
-	register_aabb(30,30,20,30)
+	register_aabb(0,0,128,8)
+	register_aabb(0,120,128,8)
+	register_aabb(0,8,8,112)
+	register_aabb(120,8,8,112)
 end
 
 function tick_sim()
+	dbg("actors: "..#sim_actors)
 	collisions={}
 	for ent in all(sim_actors) do
 		ent.phys:advance()
 		ent:add_collisions(collisions)
 	end
 	
+	for c in all(collisions) do
+		del(sim_actors,c.actor)
+	end
 end
 
 function draw_sim()
@@ -494,8 +500,8 @@ function chk_coll_aabb(aabb, crcl)
 
 	if dst < crcl.rad then
 		return {
-			diffx=dx,
-			diffy=dy,
+			diffx=-dx,
+			diffy=-dy,
 			hitx=closex,
 			hity=closey,
 			dir=vec_dir({x=-dx,y=-dy})
