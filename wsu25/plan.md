@@ -9,12 +9,11 @@ Button to add another thing?
 What is onboarding like?
 
 # Plan
-- Remove attachment
 - Blow up bomb
 - Physics!
 - Targets
 - Obstacles
-- More attachment types
+- More attachment types (incl delete) — ui for this
 - Attachment purchase process, cost
 - Tutorial
 - More levels
