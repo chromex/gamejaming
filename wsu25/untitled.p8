@@ -51,11 +51,11 @@ function begin_game(id)
 	
 	if true then
 		local att=add_attach(bmb,0.63)
-		add_attach(att,0.65)
-		att=add_attach(att,0.85)
-		add_attach(att,0.9)
+		--add_attach(att,0.65)
+		--att=add_attach(att,0.85)
+		--add_attach(att,0.9)
 		att=add_attach(bmb,0.2)
-		add_attach(att,0.4)
+		--add_attach(att,0.4)
 		add_attach(bmb,0)
 	end
 end
@@ -138,34 +138,14 @@ function start_sim()
 	phase=2
 	actors={}
 	splode(bmb.x,bmb.y,20)
-	
-	for a in all(bmb.cld) do
-		local len=dist(bmb.x,bmb.y,a.x,a.y)
-		add(actors,{
-			ref=a,
-			x=a.x,
-			y=a.y,
-			vel=2.5,
-			vx=(a.x-bmb.x)/len,
-			vy=(a.y-bmb.y)/len
-		})
-	end
+	init_sim()
 end
 
 function sim_update()
 	if btnp(❎) or btnp(🅾️) then
 		phase=1
 	else
-		-- move actors and do friction
-		for a in all(actors) do
-			a.x+=a.vx*a.vel
-			a.y+=a.vy*a.vel
-		end
-		
-		-- compute individuals
-		-- detect hits w/ walls
-		-- reflect
-		-- break up groups
+		tick_sim()
 	end
 end
 
@@ -211,30 +191,6 @@ function draw_pln_bomb()
 			spr(3,ent.ax-1,ent.ay-1)
 		end
 		pal()
-	end
-end
-
-function draw_actor_child(att,px,py,pr) 
-	local sp=types[att.id].sp
-	
-	local offset=pr+att.rad
-	local x=px+offset*cos(att.rot)
-	local y=py+offset*sin(att.rot)
-	
-	spr(sp,x-att.rad,y-att.rad)
-	for a in all(att.cld) do
-		draw_actor_child(a,x,y,att.rad)
-	end
-end
-
-function draw_sim()
-	for a in all(actors) do
-		local ref=a.ref
-		local sp=types[ref.id].sp
-		spr(sp,a.x-ref.rad,a.y-ref.rad)
-		for c in all(ref.cld) do
-			draw_actor_child(c,a.x,a.y,ref.rad)
-		end
 	end
 end
 
@@ -309,7 +265,126 @@ function draw_splode()
 	end
 end
 -->8
+-- sim shit
 
+colliders={}
+sim_actors={}
+
+function register_aabb(x,y,w,h)
+	local aabb={
+		x=x,y=y,w=w,h=h,mx=x+w,my=y+h,
+		hw=w/2.0,hh=h/2.0,
+		draw=function (self)
+			rect(self.x,self.y,self.mx,self.my,11)
+		end,
+		check=function (self,crcl)
+			return chk_coll_aabb(self,crcl)
+		end
+	}
+	add(colliders,aabb)
+end
+
+function debug_phys()
+	crcl={x=pl.x,y=pl.y,rad=3}
+	circ(crcl.x,crcl.y,crcl.rad,8)
+	
+	for c in all(colliders) do
+		c:draw()
+		local col=c:check(crcl)
+		if col!= nil then
+			circ(col.hitx,col.hity,1,15)
+			dbg(""..col.dir.x.." "..col.dir.y)
+		end
+	end
+end
+
+function make_phys(x,y,vx,vy,vel)
+	return {
+		x=x,y=y,vx=vx,vy=vy,vel=vel,
+		advance=function (self)
+			self.x+=self.vx*self.vel
+			self.y+=self.vy*self.vel
+		end
+	}
+end
+
+function make_group(x,y,vx,vy,vel)
+	return {
+		phys=make_phys(x,y,vx,vy,vel),
+		actors={},
+		links={},
+		add_actor=function (self,actor, parent)
+			add(self.actors, actor)
+			add(self.links, {actor,parent})
+		end,
+		draw=function (self)
+			for cld in all(self.actors) do
+				cld:draw(self)
+			end
+		end
+	}
+end
+
+function make_actor(id,x,y,vx,vy,vel,rad)
+	return {
+		phys=make_phys(x,y,vx,vy,vel),
+		id=id,
+		rad=rad,
+		draw=function (self,parent)
+			local dx=self.phys.x
+			local dy=self.phys.y
+			if parent!=nil then
+				dx+=parent.phys.x
+				dy+=parent.phys.y
+			end
+			local sp=types[self.id].sp
+			spr(sp,dx-self.rad,dy-self.rad)
+		end,
+		add_collisions=function (self)
+			-- todo
+		end
+	}
+end
+
+function init_sim()
+	sim_actors={}
+	
+	for a in all(bmb.cld) do
+		local len=dist(bmb.x,bmb.y,a.x,a.y)
+	
+		if #a.cld==0 then
+			local na=make_actor(
+				a.id,a.x,a.y,
+				(a.x-bmb.x)/len,
+			 (a.y-bmb.y)/len,
+			 2.5, 
+			 4)
+			add(sim_actors,na)
+		else
+			-- todo
+		end
+	end
+	
+	colliders={}
+	register_aabb(30,30,20,30)
+end
+
+function tick_sim()
+	collisions={}
+	for ent in all(sim_actors) do
+		ent.phys:advance()
+		ent:add_collisions(collisions)
+	end
+	
+end
+
+function draw_sim()
+	for ent in all(sim_actors) do
+		ent:draw()
+	end
+	
+	debug_phys()
+end
 -->8
 -- util
 
@@ -318,6 +393,10 @@ poke(0x5f5c,255)
 
 function clamp(val,minv,maxv)
 	return min(maxv,max(minv,val))
+end
+
+function length(ax,ay)
+	return dist(0,0,ax,ay)
 end
 
 function dist(ax,ay,bx,by)
@@ -355,6 +434,75 @@ end
 
 function _draw()
 	states[gstate][2]()
+end
+-->8
+--physics
+
+_compass={
+	{x=0,y=1},
+	{x=1,y=0},
+	{x=0,y=-1},
+	{x=-1,y=0}
+}
+
+function normalize(vec)
+	local l=length(vec.x,vec.y)
+	return {
+		x=vec.x/l,
+		y=vec.y/l
+	}
+end
+
+function dot(v1,v2)
+	return v1.x*v2.x + v1.y*v2.y
+end
+
+function vec_dir(diff)
+	local mx=0
+	local best=1
+	local norm=normalize(diff)
+	
+	for i=1,4 do
+		local dp=dot(norm,_compass[i])
+		if dp > mx then
+			mx = dp
+			best = i
+		end
+	end
+	
+	return _compass[best]
+end
+
+function chk_coll_aabb(aabb, crcl)
+	local cx=crcl.x
+	local cy=crcl.y
+	local bcx=aabb.x+aabb.hw
+	local bcy=aabb.y+aabb.hh
+	local dx=cx-bcx
+	local dy=cy-bcy
+	
+	local clampx=clamp(dx,-aabb.hw,aabb.hw)
+	local clampy=clamp(dy,-aabb.hh,aabb.hh)
+	
+	local closex=bcx+clampx
+	local closey=bcy+clampy
+	
+	dx=closex-cx
+	dy=closey-cy
+	
+	local dst=length(dx,dy)
+
+	if dst < crcl.rad then
+		return {
+			diffx=dx,
+			diffy=dy,
+			hitx=closex,
+			hity=closey,
+			dir=vec_dir({x=-dx,y=-dy})
+		}
+	else
+		return nil
+	end
 end
 __gfx__
 000b000044444444333333330a000000000000000000000000000000000000000000000000000000000e80000000000000000888888000000000000000000000

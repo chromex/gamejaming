@@ -18,9 +18,9 @@ What is onboarding like?
 - Tutorial
 - More levels
 
-# planning structure
-- root is the bomb
-- bomb, and attachments, can have children
-- attachment needs to have a “type”
-- placing an attachment follows surface of existing items?
-	-	OR you spawn an attachment on something specific and move it around the surface. way easier than snapping and shit
+# Actor setup…
+- collision type: actor, group (if applicable), point
+
+# How do I want to do collision surfaces? What coliders?
+- AABB
+- Circles
