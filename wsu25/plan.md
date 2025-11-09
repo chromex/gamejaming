@@ -9,7 +9,6 @@ Button to add another thing?
 What is onboarding like?
 
 # Plan
-- Move attachment
 - Remove attachment
 - Blow up bomb
 - Physics!

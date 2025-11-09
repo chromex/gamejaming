@@ -95,7 +95,7 @@ function pln_update()
 	if selected==nil then
 		if target!=nil then
 			-- add!
-			if rel_btn(❎) then
+			if btnp(❎) then
 				local att={
 					id=2,
 					rad=4,
@@ -104,14 +104,14 @@ function pln_update()
 				}
 				add(target.cld,att)
 				selected=att
-			elseif rel_btn(🅾️) and target!=bmb then
+			elseif btnp(🅾️) and target!=bmb then
 				selected=target
 			end
 		end
 	else
 		if (btn(⬅️) or btn(⬆️)) selected.rot+=0.025
 		if (btn(➡️) or btn(⬇️)) selected.rot-=0.025
-		if (rel_btn(❎) or rel_btn(🅾️)) selected=nil
+		if (btnp(❎) or btnp(🅾️)) selected=nil
 	end
 end
 
@@ -169,6 +169,10 @@ end
 
 -->8
 -- util
+
+-- disable repeat on btnp
+poke(0x5f5c,255)
+
 function clamp(val,minv,maxv)
 	return min(maxv,max(minv,val))
 end
@@ -192,24 +196,6 @@ function draw_debug()
 	dbgstrs={}
 end
 
-btnstate={}
-btns={❎,🅾️}
-for b in all(btns) do
-	btnstate[b]={cur=false,prev=false}
-end
-	
-function tick_btn()
-	for b in all(btns) do
-		local st=btnstate[b]
-		st.prev=st.cur
-		st.cur=btn(b)
-	end
-end
-
-function rel_btn(b)
-	local st=btnstate[b]
-	return st.cur==true and st.prev==false
-end
 -->8
 -- state dispatch
 
@@ -220,7 +206,6 @@ states={
 }
 
 function _update()
-	tick_btn()
 	states[gstate][1]()
 end
 
