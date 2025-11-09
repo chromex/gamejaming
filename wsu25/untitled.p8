@@ -296,6 +296,14 @@ function make_phys(x,y,vx,vy,vel)
 		advance=function (self)
 			self.x+=self.vx*self.vel
 			self.y+=self.vy*self.vel
+			self.vel-=0.03
+			self.vel=max(self.vel,0)
+		end,
+		reflect=function (self,norm)
+			local d={x=self.vx,y=self.vy}
+			local dp=dot(d,norm)
+			self.vx=self.vx-(2*dp*norm.x)
+			self.vy=self.vy-(2*dp*norm.y)
 		end
 	}
 end
@@ -372,7 +380,7 @@ function init_sim()
 end
 
 function tick_sim()
-	dbg("actors: "..#sim_actors)
+	--dbg("actors: "..#sim_actors)
 	collisions={}
 	for ent in all(sim_actors) do
 		ent.phys:advance()
@@ -380,7 +388,10 @@ function tick_sim()
 	end
 	
 	for c in all(collisions) do
-		del(sim_actors,c.actor)
+		local actor=c.actor
+		actor.phys.x+=c.dir.x*c.dist
+		actor.phys.y+=c.dir.y*c.dist
+		actor.phys:reflect(c.dir)
 	end
 end
 
@@ -500,8 +511,7 @@ function chk_coll_aabb(aabb, crcl)
 
 	if dst < crcl.rad then
 		return {
-			diffx=-dx,
-			diffy=-dy,
+			dist=crcl.rad-dst,
 			hitx=closex,
 			hity=closey,
 			dir=vec_dir({x=-dx,y=-dy})
