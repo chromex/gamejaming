@@ -137,7 +137,7 @@ function draw_bomb()
 			local blnk=flr((t()%1)*4)%2==0
 			if blnk then
 				if ent==selected then
-					pal({2,2,2,8,8,2,15,15,8,8,15,15,8,8,15,8})
+					pal({2,2,8,8,2,15,15,8,8,15,15,8,8,15,8,2})
 				else
 					pal({1,1,5,5,5,6,7,13,6,7,7,6,13,6,7,1})
 				end
