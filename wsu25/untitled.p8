@@ -93,20 +93,25 @@ function pln_update()
 	end
 	
 	if selected==nil then
-		if target!=nil and rel_btn(❎) then
-			local att={
-				id=2,
-				rad=4,
-				rot=0,
-				cld={}
-			}
-			add(target.cld,att)
-			selected=att
-		end 
+		if target!=nil then
+			-- add!
+			if rel_btn(❎) then
+				local att={
+					id=2,
+					rad=4,
+					rot=0,
+					cld={}
+				}
+				add(target.cld,att)
+				selected=att
+			elseif rel_btn(🅾️) and target!=bmb then
+				selected=target
+			end
+		end
 	else
 		if (btn(⬅️) or btn(⬆️)) selected.rot+=0.025
 		if (btn(➡️) or btn(⬇️)) selected.rot-=0.025
-		if (rel_btn(❎)) selected=nil
+		if (rel_btn(❎) or rel_btn(🅾️)) selected=nil
 	end
 end
 
@@ -131,7 +136,11 @@ function draw_bomb()
 		if doblink then
 			local blnk=flr((t()%1)*4)%2==0
 			if blnk then
-				pal({1,1,5,5,5,6,7,13,6,7,7,6,13,6,7,1})
+				if ent==selected then
+					pal({2,2,2,8,8,2,15,15,8,8,15,15,8,8,15,8})
+				else
+					pal({1,1,5,5,5,6,7,13,6,7,7,6,13,6,7,1})
+				end
 			end
 		end
 		local sp=types[ent.id].sp
@@ -184,12 +193,17 @@ function draw_debug()
 end
 
 btnstate={}
-btnstate[❎]={cur=false,prev=false}
+btns={❎,🅾️}
+for b in all(btns) do
+	btnstate[b]={cur=false,prev=false}
+end
 	
 function tick_btn()
-	local st=btnstate[❎]
-	st.prev=st.cur
-	st.cur=btn(❎)
+	for b in all(btns) do
+		local st=btnstate[b]
+		st.prev=st.cur
+		st.cur=btn(b)
+	end
 end
 
 function rel_btn(b)
